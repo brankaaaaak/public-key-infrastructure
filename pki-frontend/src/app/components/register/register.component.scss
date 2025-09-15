@@ -1,0 +1,47 @@
+.page.register {
+  width: 300px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  input {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+
+  .strength-bar {
+    height: 6px;
+    background-color: #eee;
+    border-radius: 3px;
+    margin: 5px 0;
+
+    .bar {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+  }
+
+  small {
+    margin-bottom: 1rem; 
+    display: block;
+    color: #6a1b9a;
+    font-weight: 500;
+  }
+
+  button {
+    background-color: #6a1b9a; 
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+
+    &:disabled {
+      background-color: #aaa;
+      cursor: not-allowed;
+    }
+  }
+}
