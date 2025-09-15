@@ -3,6 +3,9 @@ import { FormGroup, Validators, FormBuilder, ReactiveFormsModule } from '@angula
 import zxcvbn from 'zxcvbn';
 import { passwordStrengthValidator } from '../../helpers/password-strength.validator';
 import { NgIf } from '@angular/common';
+import { UserService } from '../../services/user.service';
+import { Router } from '@angular/router';
+import { passwordMatchValidator } from '../../helpers/password-match.validator';
 
 @Component({
   selector: 'app-register',
@@ -14,8 +17,10 @@ import { NgIf } from '@angular/common';
 export class RegisterComponent {
   form: FormGroup;
   passwordStrength = 0;
+  showSuccessPopup = false;
+  notification?: { msgBody: string };
 
-  constructor(private fb: FormBuilder) {
+  constructor(private fb: FormBuilder, private userService: UserService, private router: Router) {
     this.form = this.fb.group({
       name: ['', Validators.required],
       lastName: ['', Validators.required],
@@ -23,7 +28,7 @@ export class RegisterComponent {
       organization: ['', Validators.required],
       password: ['', [Validators.required, passwordStrengthValidator()]],
       repeatPassword: ['', Validators.required],
-    });
+    }, { validators: passwordMatchValidator() });
   }
 
   onPasswordInput(): void {
@@ -42,8 +47,28 @@ export class RegisterComponent {
 
   onSubmit(): void {
     if (this.form.valid) {
-      console.log(this.form.value);
-      // TODO: 
+      this.notification = { msgBody: 'Processing registration, please wait...' };
+      const dto = {
+        name: this.form.value.name,
+        lastName: this.form.value.lastName,
+        email: this.form.value.email,
+        organization: this.form.value.organization,
+        password: this.form.value.password
+      };
+
+      this.userService.register(dto).subscribe({
+        next: () => {
+          this.showSuccessPopup = true;
+
+          setTimeout(() => {
+            this.showSuccessPopup = false;
+            this.router.navigate(['/login']);
+          }, 3000);
+        },
+        error: (err) => {
+          console.error('Registration failed:', err);
+        }
+      });
     }
   }
 }
