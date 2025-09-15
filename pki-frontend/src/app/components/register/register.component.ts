@@ -1,0 +1,49 @@
+import { Component } from '@angular/core';
+import { FormGroup, Validators, FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import zxcvbn from 'zxcvbn';
+import { passwordStrengthValidator } from '../../helpers/password-strength.validator';
+import { NgIf } from '@angular/common';
+
+@Component({
+  selector: 'app-register',
+  standalone: true,
+  imports: [ReactiveFormsModule, NgIf],
+  templateUrl: './register.component.html',
+  styleUrl: './register.component.scss'
+})
+export class RegisterComponent {
+  form: FormGroup;
+  passwordStrength = 0;
+
+  constructor(private fb: FormBuilder) {
+    this.form = this.fb.group({
+      name: ['', Validators.required],
+      lastName: ['', Validators.required],
+      email: ['', [Validators.required, Validators.email]],
+      organization: ['', Validators.required],
+      password: ['', [Validators.required, passwordStrengthValidator()]],
+      repeatPassword: ['', Validators.required],
+    });
+  }
+
+  onPasswordInput(): void {
+    const password = this.form.get('password')?.value || '';
+    const result = zxcvbn(password);
+    this.passwordStrength = result.score;
+  }
+
+  get passwordStrengthLabel(): string {
+    return ['Very weak', 'Weak', 'Fair', 'Good', 'Excellent'][this.passwordStrength];
+  }
+
+  get passwordStrengthColor(): string {
+    return ['#d32f2f', '#f57c00', '#fbc02d', '#388e3c', '#2e7d32'][this.passwordStrength];
+  }
+
+  onSubmit(): void {
+    if (this.form.valid) {
+      console.log(this.form.value);
+      // TODO: 
+    }
+  }
+}
