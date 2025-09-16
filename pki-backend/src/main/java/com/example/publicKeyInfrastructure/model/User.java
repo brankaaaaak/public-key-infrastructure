@@ -1,5 +1,6 @@
 package com.example.publicKeyInfrastructure.model;
 
+import com.example.publicKeyInfrastructure.dto.RegisterDTO;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -40,7 +41,6 @@ public class User implements UserDetails {
             joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id"))
     private Set<Role> roles;
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return roles;
@@ -52,5 +52,12 @@ public class User implements UserDetails {
     @Override
     public String getUsername() {
         return email;
+    }
+
+    public User(RegisterDTO dto){
+        this.name = dto.getName();
+        this.lastName = dto.getLastName();
+        this.organization = dto.getOrganization();
+        this.email = dto.getEmail();
     }
 }

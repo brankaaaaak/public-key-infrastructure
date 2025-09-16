@@ -1,6 +1,8 @@
 <div class="page register">
   <h2>Registration</h2>
-
+  <div *ngIf="showSuccessPopup" class="popup">
+    Registration successful! Please check your email to verify your account.
+  </div>
   <form [formGroup]="form" (ngSubmit)="onSubmit()">
     <input type="text" placeholder="Name" formControlName="name" />
     <input type="text" placeholder="Last name" formControlName="lastName" />
@@ -23,6 +25,11 @@
     <small>Password strength: {{ passwordStrengthLabel }}</small>
     </div>
     <input type="password" placeholder="Repeat password" formControlName="repeatPassword" />
-    <button type="submit" [disabled]="form.invalid">Register</button>
+    <div *ngIf="form.errors?.['passwordMismatch'] && form.get('repeatPassword')?.touched"
+        style="color: #6a1b9a; font-size: 12px;">
+      Passwords do not match.
+    </div>
+    <p *ngIf="notification" class="notification">{{ notification.msgBody }}</p>
+    <button type="submit" [disabled]="form.invalid || form.errors?.['passwordMismatch']">Register</button>
   </form>
 </div>
