@@ -10,6 +10,8 @@ export class UserService {
 
   constructor(private http: HttpClient) { }
 
+  public currentUser : any | null = null;
+
   register(dto: any): Observable<any> {
     return this.http.post<any>(`${environment.apiHost}/api/users/register`, dto);
   }
