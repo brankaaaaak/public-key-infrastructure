@@ -1,12 +1,12 @@
 package com.example.publicKeyInfrastructure.controller;
 
-import com.example.publicKeyInfrastructure.dto.RegisterDTO;
-import com.example.publicKeyInfrastructure.dto.UserDTO;
+import com.example.publicKeyInfrastructure.dto.*;
 import com.example.publicKeyInfrastructure.model.User;
 import com.example.publicKeyInfrastructure.model.VerificationToken;
 import com.example.publicKeyInfrastructure.repository.IUserRepository;
 import com.example.publicKeyInfrastructure.repository.IVerificationTokenRepository;
 import com.example.publicKeyInfrastructure.service.interfaces.IUserService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.MediaType;
@@ -61,6 +61,16 @@ public class UserController {
         verificationTokenRepository.save(verificationToken);
 
         return "You are successfully verified!";
+    }
+    @PostMapping("/login")
+    public ResponseEntity<TokenPair> login(@Valid @RequestBody LoginDTO request) {
+        TokenPair tokenPair = service.login(request);
+        return ResponseEntity.ok(tokenPair);
+    }
+    @PostMapping("/refresh-token")
+    public ResponseEntity<?> refreshToken(@Valid @RequestBody RefreshTokenDTO request) {
+        TokenPair tokenPair = service.refreshToken(request);
+        return ResponseEntity.ok(tokenPair);
     }
 
 }
