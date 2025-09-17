@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../auth/auth.service';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-login',
@@ -15,7 +16,7 @@ export class LoginComponent {
   form: FormGroup;
 
 
-  constructor(private authService: AuthService, private fb: FormBuilder) {
+  constructor(private authService: AuthService, private fb: FormBuilder, private router: Router) {
     this.form = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(8)]]
@@ -31,8 +32,10 @@ export class LoginComponent {
     this.authService.login({ email, password }).subscribe({
       next: () => {
         this.loginFailed = false;
-        //redirect
-        console.log('Login successful');
+        const role = this.authService.getRole();
+        if (role === 'ROLE_ADMIN') {
+          this.router.navigate(['/admin-home']);
+        }
       },
       error: (err) => {
         this.loginFailed = true;
