@@ -55,7 +55,7 @@ export class AuthService {
     this.user$.next(this.getRole());
   }
   getRole(): string | null {
-    const token = localStorage.getItem('jwt');
+    const token = localStorage.getItem('access_token');
     if (!token) return null;
 
     const helper = new JwtHelperService();
@@ -88,7 +88,7 @@ export class AuthService {
     this.user$.next(null);
     this.isLoggedIn$.next(false);
     this.userService.currentUser = null;
-    this.router.navigate(['/login']);
+    this.router.navigate(['']);
   }
   getRefreshToken(): string | null {
     return localStorage.getItem('refresh_token');

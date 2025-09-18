@@ -3,6 +3,8 @@ import { WelcomePageComponent } from './components/welcome-page/welcome-page.com
 import { LoginComponent } from './components/login/login.component';
 import { RegisterComponent } from './components/register/register.component';
 import { provideHttpClient } from '@angular/common/http';
+import { AdminHomeComponent } from './components/admin-home/admin-home.component';
+import { CreateRootCertificateComponent } from './components/create-root-certificate/create-root-certificate.component';
 
 export const routes: Routes = [
     { path: '', component: WelcomePageComponent },
@@ -11,5 +13,7 @@ export const routes: Routes = [
     path: 'register', 
     component: RegisterComponent,
     providers: [provideHttpClient()]  
-  },
+    },
+    { path: 'admin-home', component: AdminHomeComponent },
+    { path: 'admin/create-root', component: CreateRootCertificateComponent }
 ];

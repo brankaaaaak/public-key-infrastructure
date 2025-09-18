@@ -1,0 +1,8 @@
+<div class="form-container">
+  <h2>Create Root Certificate</h2>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+
+    <button type="submit" [disabled]="form.invalid">Generate Root Certificate</button>
+  </form>
+</div>
