@@ -48,7 +48,5 @@ public class Certificate {
 
     @Column(name = "revocation_reason")
     private String revocationReason;
-
-    @Column(name = "file_path", nullable = false)
-    private String filePath;
+    
 }
