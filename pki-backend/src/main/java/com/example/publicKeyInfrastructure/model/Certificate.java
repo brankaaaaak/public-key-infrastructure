@@ -48,5 +48,5 @@ public class Certificate {
 
     @Column(name = "revocation_reason")
     private String revocationReason;
-    
+
 }
