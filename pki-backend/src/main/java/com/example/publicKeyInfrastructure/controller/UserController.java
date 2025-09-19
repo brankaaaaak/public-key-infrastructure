@@ -32,7 +32,7 @@ public class UserController {
     private IVerificationTokenRepository verificationTokenRepository;
 
     @PostMapping(value = "/register",produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<UserDTO> addEventOrganizer(@RequestBody RegisterDTO dto){
+    public ResponseEntity<UserDTO> registerUser(@RequestBody RegisterDTO dto){
         UserDTO newUser = service.register(dto);
         return ResponseEntity.ok(newUser);
     }
