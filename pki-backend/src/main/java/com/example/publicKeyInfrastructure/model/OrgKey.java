@@ -1,9 +1,15 @@
 package com.example.publicKeyInfrastructure.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "organization_keys")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class OrgKey {
 
     @Id
@@ -20,5 +26,9 @@ public class OrgKey {
     @JoinColumn(name = "organization_id", nullable = false, unique = true)
     private Organization organization;
 
+    public OrgKey(Organization org, byte[] encrypted) {
+        this.organization=org;
+        this.encryptedKey=encrypted;
+    }
 }
 
