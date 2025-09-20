@@ -10,4 +10,5 @@ import lombok.*;
 public class CreateCertificateRequestDTO {
     private String issuer;
     private String certificateType;
+    private int durationInDays;
 }
