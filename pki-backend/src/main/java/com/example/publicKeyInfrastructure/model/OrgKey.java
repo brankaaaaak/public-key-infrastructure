@@ -18,7 +18,7 @@ public class OrgKey {
 
     // enkriptovan ključ (blob u bazi)
     @Lob
-    @Column(nullable = false)
+    @Column(name="organization_key",nullable = false)
     private byte[] encryptedKey;
 
     // 1:1 veza ka Organization

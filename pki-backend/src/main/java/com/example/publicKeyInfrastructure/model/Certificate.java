@@ -49,6 +49,14 @@ public class Certificate {
     @Column(name = "revocation_reason")
     private String revocationReason;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organization_id", nullable = false)
+    private Organization organization;
+
+    @Lob
+    @Column(name="private_key",nullable = false)
+    private byte[] encryptedPrivateKey;
+
     public boolean isValid() {
         Date now = new Date();
         return !now.before(validFrom) && now.before(validTo);

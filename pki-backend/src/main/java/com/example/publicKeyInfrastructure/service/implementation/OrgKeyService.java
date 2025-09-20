@@ -33,7 +33,7 @@ public class OrgKeyService implements IOrgKeyService {
 
         Organization org = organizationRepository.findById(orgId)
                 .orElseThrow(() -> new EntityNotFoundException("Organization not found with id: " + orgId));
-        
+
         repository.save(new OrgKey(org,encrypted));
     }
 
