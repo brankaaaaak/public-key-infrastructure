@@ -1,5 +1,6 @@
 package com.example.publicKeyInfrastructure.service.implementation;
 
+import com.example.publicKeyInfrastructure.dto.CertificateDTO;
 import com.example.publicKeyInfrastructure.dto.CertificateRequestDTO;
 import com.example.publicKeyInfrastructure.dto.CreateCertificateRequestDTO;
 import com.example.publicKeyInfrastructure.enumeration.CertificateType;
@@ -10,6 +11,7 @@ import com.example.publicKeyInfrastructure.model.User;
 import com.example.publicKeyInfrastructure.repository.ICertificateRequestRepository;
 import com.example.publicKeyInfrastructure.repository.IUserRepository;
 import com.example.publicKeyInfrastructure.service.interfaces.ICertificateRequestService;
+import com.example.publicKeyInfrastructure.service.interfaces.ICertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.security.core.Authentication;
@@ -26,6 +28,9 @@ public class CertificateRequestService implements ICertificateRequestService {
 
     @Autowired
     ICertificateRequestRepository certificateRequestRepository;
+
+    @Autowired
+    ICertificateService certificateService;
 
     @Override
     public CertificateRequestDTO createRequest(CreateCertificateRequestDTO request) throws ChangeSetPersister.NotFoundException {
@@ -49,6 +54,23 @@ public class CertificateRequestService implements ICertificateRequestService {
         newRequest = certificateRequestRepository.save(newRequest);
         return new CertificateRequestDTO(newRequest);
     }
+
+    @Override
+    public CertificateDTO acceptRequest(Long id) throws ChangeSetPersister.NotFoundException {
+        CertificateRequest request = certificateRequestRepository.findById(id).orElseThrow(() ->
+                new ChangeSetPersister.NotFoundException());
+        //provjera validnosti ?
+        if (!request.getRequestType().equals(RequestType.PENDING)){
+            throw new IllegalArgumentException("Request type must be PENDING.");
+        }
+        if (request.getCertificateType() != CertificateType.ROOT && !certificateService.checkingValidation(request.getIssuer().getSerialNumber())){
+            throw new IllegalArgumentException("Issuer certificate is not valid! This request cannot be accepted.");
+        }
+        request.setRequestType(RequestType.ACCEPTED);
+        certificateRequestRepository.save(request);
+        return certificateService.createCertificate(request);
+    }
+
     private User getLoggedUser() throws ChangeSetPersister.NotFoundException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
