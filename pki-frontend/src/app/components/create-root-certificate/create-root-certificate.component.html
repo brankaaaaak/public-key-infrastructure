@@ -1,8 +1,16 @@
-<div class="form-container">
+<div class="create-root-container">
   <h2>Create Root Certificate</h2>
+  <p>This action will create a new Root Certificate.</p>
 
-  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+  <button class="btn btn-primary" (click)="createRootCertificate()">
+    Create Root Certificate
+  </button>
 
-    <button type="submit" [disabled]="form.invalid">Generate Root Certificate</button>
-  </form>
+  <div *ngIf="successMessage" class="success-message">
+    {{ successMessage }}
+  </div>
+
+  <div *ngIf="errorMessage" class="error-message">
+    {{ errorMessage }}
+  </div>
 </div>
