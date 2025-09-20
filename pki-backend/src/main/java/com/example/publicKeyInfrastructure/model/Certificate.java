@@ -49,4 +49,10 @@ public class Certificate {
     @Column(name = "revocation_reason")
     private String revocationReason;
 
+    public boolean isValid() {
+        Date now = new Date();
+        return !now.before(validFrom) && now.before(validTo);
+    }
+
+
 }

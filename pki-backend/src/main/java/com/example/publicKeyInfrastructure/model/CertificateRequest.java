@@ -40,10 +40,15 @@ public class CertificateRequest {
     @Column(name = "refusal_reason")
     private String refusalReason;
 
+    @Column(name = "duration_in_days", nullable = false)
+    private int durationInDays;
+
+
     public CertificateRequest(CreateCertificateRequestDTO dto){
         this.certificateType = dto.getCertificateType() != null
                 ? CertificateType.valueOf(dto.getCertificateType())
                 : null;
+        this.durationInDays = dto.getDurationInDays();
         this.requestType = RequestType.PENDING;
         this.createdAt = LocalDateTime.now();
     }
