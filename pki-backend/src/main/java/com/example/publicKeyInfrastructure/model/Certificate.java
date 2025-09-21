@@ -50,7 +50,7 @@ public class Certificate {
     private String revocationReason;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "organization_id", nullable = false)
+    @JoinColumn(name = "organization_id", nullable = true)
     private Organization organization;
 
     @Lob

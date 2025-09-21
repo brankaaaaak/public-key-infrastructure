@@ -3,8 +3,10 @@ package com.example.publicKeyInfrastructure.crypto;
 import com.example.publicKeyInfrastructure.data.CertificateIssuer;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import javax.crypto.SecretKey;
 import java.io.*;
 import java.security.*;
 import java.security.cert.Certificate;
@@ -14,24 +16,26 @@ import java.security.cert.X509Certificate;
 
 @Component
 public class KeystoreManager {
+    private final KeyStore keyStore;
+    private final char[] password;
 
-    private KeyStore keyStore;
+    public KeystoreManager(@Value("${KEYSTORE_PASSWORD}") String passwordEnv) {
+        if (passwordEnv == null || passwordEnv.isEmpty()) {
+            throw new RuntimeException("Environment variable KEYSTORE_PASSWORD not set");
+        }
+        this.password = passwordEnv.toCharArray();
 
-    public KeystoreManager() {
         try {
-            keyStore = KeyStore.getInstance("JKS", "SUN");
-        } catch (KeyStoreException | NoSuchProviderException e) {
+            this.keyStore = KeyStore.getInstance("JKS"); // inicijalizuje KeyStore objekat
+            this.keyStore.load(null, password); // prazni KeyStore sa lozinkom
+        } catch (KeyStoreException | NoSuchAlgorithmException | CertificateException | IOException e) {
             throw new RuntimeException("Failed to initialize KeyStore", e);
         }
     }
 
-    /** =================== ENV PASSWORD =================== */
+    /** =================== HELPERS =================== */
     private char[] getPassword() {
-        String pwd = System.getenv("KEYSTORE_PASSWORD");
-        if (pwd == null || pwd.isEmpty()) {
-            throw new RuntimeException("Environment variable KEYSTORE_PASSWORD not set");
-        }
-        return pwd.toCharArray();
+        return password;
     }
 
     /** =================== ORG KEYSTORE FILE =================== */
@@ -127,5 +131,19 @@ public class KeystoreManager {
             throw new RuntimeException("Failed to download certificate", e);
         }
     }
+
+    /** =================== WRITER ZA ROOT =================== */
+    private String getRootKeyStoreFile() {
+        String folder = "keystores"; // relativno u odnosu na radni folder JVM-a
+        File dir = new File(folder);
+        if (!dir.exists()) dir.mkdirs();
+        return folder + File.separator + "root.jks";
+    }
+
+    public void writeRoot(String alias, PrivateKey privateKey, Certificate certificate) {
+        String keyStoreFile = getRootKeyStoreFile();
+        write(keyStoreFile, alias, privateKey, certificate);
+    }
+
 
 }
