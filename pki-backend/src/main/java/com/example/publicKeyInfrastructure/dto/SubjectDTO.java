@@ -1,5 +1,6 @@
 package com.example.publicKeyInfrastructure.dto;
 
+import com.example.publicKeyInfrastructure.model.Organization;
 import com.example.publicKeyInfrastructure.model.User;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -18,7 +19,10 @@ public class SubjectDTO {
         this.name = user.getName();
         this.lastName = user.getLastName();
         this.email = user.getEmail();
-        this.organization = user.getOrganization().getName();
+        if(user.getOrganization()==null)
+            this.organization="";
+        else
+            this.organization = user.getOrganization().getName();
     }
 }
 

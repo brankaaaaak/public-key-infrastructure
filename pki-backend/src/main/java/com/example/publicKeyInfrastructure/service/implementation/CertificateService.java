@@ -98,7 +98,23 @@ public class CertificateService implements ICertificateService {
             if (issuerCert.getCertificateType() == CertificateType.END) {
                 throw new RuntimeException("Cannot use End-Entity certificate as issuer");
             }
-            //Dodat konstruktor
+
+            /*Certificate certificate = new Certificate(
+                    certificateRequest.getCertificateType(),
+                    certificateSubject .???          // User/Owner
+                    x509Certificate.getSerialNumber().toString(),            // serial number
+                    certificateIssuer.???,        // issuer serial number ili CN issuer-a
+                    x509Certificate.getNotBefore(),
+                    x509Certificate.getNotAfter(),
+                    false,                                                   // revoked
+                    null,                                                    // revocationReason
+                    certificateIssuer.,
+                    encryptedPrivateKey,
+                    certificateSubject.getPublicKey().getEncoded()
+            );
+
+            certificateRepository.save(certificate);*/
+
 
         }catch (Exception e){
 
