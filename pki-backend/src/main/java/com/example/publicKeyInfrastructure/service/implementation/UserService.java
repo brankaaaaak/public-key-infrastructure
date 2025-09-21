@@ -1,9 +1,11 @@
 package com.example.publicKeyInfrastructure.service.implementation;
 
 import com.example.publicKeyInfrastructure.dto.*;
+import com.example.publicKeyInfrastructure.model.Organization;
 import com.example.publicKeyInfrastructure.model.Role;
 import com.example.publicKeyInfrastructure.model.User;
 import com.example.publicKeyInfrastructure.model.VerificationToken;
+import com.example.publicKeyInfrastructure.repository.IOrganizationRepository;
 import com.example.publicKeyInfrastructure.repository.IRoleRepository;
 import com.example.publicKeyInfrastructure.repository.IUserRepository;
 import com.example.publicKeyInfrastructure.repository.IVerificationTokenRepository;
@@ -52,12 +54,19 @@ public class UserService implements IUserService{
     @Autowired
     private UserDetailsService userDetailsService;
 
+    @Autowired
+    private IOrganizationRepository organizationRepository;
+
     @Override
     public UserDTO register(RegisterDTO request) {
         if (this.userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("User with provided email already exists!");
         }
+        Organization organization = organizationRepository.findByName(request.getOrganization())
+                .orElseThrow(() -> new RuntimeException("Organization not found: " + request.getOrganization()));
         User newUser = new User(request);
+        System.out.println(organization.toString());
+        newUser.setOrganization(organization);
         newUser.setEnabled(false);
         newUser.setPassword(passwordEncoder.encode(request.getPassword()));
         Set<Role> roles = new HashSet<>();
