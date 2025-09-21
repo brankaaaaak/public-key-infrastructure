@@ -6,6 +6,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { AdminHomeComponent } from './components/admin-home/admin-home.component';
 import { CreateRootCertificateComponent } from './components/create-root-certificate/create-root-certificate.component';
 import { CaHomeComponent } from './components/ca-home/ca-home.component';
+import { CaCreateIntermediateCertificateComponent } from './components/ca-create-intermediate-certificate/ca-create-intermediate-certificate.component';
 
 export const routes: Routes = [
     { path: '', component: WelcomePageComponent },
@@ -18,4 +19,5 @@ export const routes: Routes = [
     { path: 'admin-home', component: AdminHomeComponent },
     { path: 'admin/create-root', component: CreateRootCertificateComponent },
     { path: 'ca-home', component: CaHomeComponent},
+    { path: 'ca/ca-create-intermediate-certificate', component: CaCreateIntermediateCertificateComponent}
 ];
