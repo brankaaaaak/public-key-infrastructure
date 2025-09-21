@@ -49,7 +49,6 @@ public class CertificateService implements ICertificateService {
     @Autowired
     private MasterKeyManager masterKeyManager;
 
-
     @Override
     public CertificateDTO createCertificate(CertificateRequest certificateRequest) {
         CertificateSubject certificateSubject = createCertificateSubject(certificateRequest);
