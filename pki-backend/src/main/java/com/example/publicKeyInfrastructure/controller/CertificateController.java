@@ -1,5 +1,6 @@
 package com.example.publicKeyInfrastructure.controller;
 
+import com.example.publicKeyInfrastructure.dto.CertificateDTO;
 import com.example.publicKeyInfrastructure.dto.CertificateRequestDTO;
 import com.example.publicKeyInfrastructure.dto.CreateCertificateRequestDTO;
 import com.example.publicKeyInfrastructure.service.interfaces.ICertificateRequestService;
@@ -23,5 +24,8 @@ public class CertificateController {
         CertificateRequestDTO created = requestService.createRequest(dto);
         return ResponseEntity.ok(created);
     }
-
+    @GetMapping(value="/organization-certificates", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<CertificateDTO> getOrganizationCertificates() throws Exception {
+        return null;
+    }
 }

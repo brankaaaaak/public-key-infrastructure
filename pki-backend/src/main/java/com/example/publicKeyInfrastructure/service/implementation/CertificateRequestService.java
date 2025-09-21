@@ -51,12 +51,29 @@ public class CertificateRequestService implements ICertificateRequestService {
         newRequest.setSubject(subject);
         boolean isAdmin = subject.getRoles().stream()
                 .anyMatch(r -> r.getName().equals("ROLE_ADMIN"));
+        boolean isCAUser=subject.getRoles().stream()
+                .anyMatch((r->r.getName().equals("ROLE_CA")));
+        boolean isUser=subject.getRoles().stream()
+                .anyMatch((r->r.getName().equals("ROLE_USER")));
         if(isAdmin){
             newRequest.setRequestType(RequestType.ACCEPTED);
             //to do -> create certificate
             certificateService.createCertificate(newRequest);
+            newRequest = certificateRequestRepository.save(newRequest);
         }
-        newRequest = certificateRequestRepository.save(newRequest);
+        else if(isCAUser) {
+            if(newRequest.getCertificateType()==CertificateType.INTERMEDIATE || newRequest.getCertificateType()==CertificateType.END)
+            {
+                newRequest.setRequestType(RequestType.PENDING);
+                newRequest = certificateRequestRepository.save(newRequest);
+            }
+        }
+        else if(isUser){
+            if(newRequest.getCertificateType()==CertificateType.END){
+                newRequest.setRequestType(RequestType.PENDING);
+                newRequest = certificateRequestRepository.save(newRequest);
+            }
+        }
         return new CertificateRequestDTO(newRequest);
     }
 

@@ -64,14 +64,15 @@ public class CertificateService implements ICertificateService {
         CertificateSubject certificateSubject = createCertificateSubject(certificateRequest);
         CertificateIssuer certificateIssuer;
         byte[] encryptedPrivateKey;
-        Certificate issuerCert;
+        Certificate issuerCert=null;
         if(certificateRequest.getIssuer() ==null || certificateRequest.getCertificateType()==CertificateType.ROOT){
             certificateIssuer = new CertificateIssuer(
                     certificateSubject.getX500name(),
                     certificateSubject.getPrivateKey(),
                     certificateSubject.getPublicKey());
             encryptedPrivateKey = masterKeyManager.encryptWithRoot(certificateSubject.getPrivateKey().getEncoded());
-            saveCertificateToDb(certificateRequest,certificateSubject,certificateIssuer,encryptedPrivateKey);
+            if(validCertificateCreation(certificateRequest,issuerCert))
+                saveCertificateToDb(certificateRequest,certificateSubject,certificateIssuer,encryptedPrivateKey);
         }else{
             //to do i or ee
             // Uzima se issuer sertifikat iz baze
@@ -97,7 +98,8 @@ public class CertificateService implements ICertificateService {
             }
             // Šifrujemo privatni ključ novog sertifikata sa org key
             encryptedPrivateKey = CryptoUtils.encryptAES(certificateSubject.getPrivateKey().getEncoded(), decryptedOrgKey);
-            saveCertificateToDb(certificateRequest,certificateSubject,certificateIssuer,encryptedPrivateKey);
+            if(validCertificateCreation(certificateRequest,issuerCert))
+                saveCertificateToDb(certificateRequest,certificateSubject,certificateIssuer,encryptedPrivateKey);
         }
         return null;
     }
@@ -106,56 +108,78 @@ public class CertificateService implements ICertificateService {
             CertificateSubject subject,
             CertificateIssuer issuer,
             byte[] encryptedPrivateKey) {
-        try {
-            X509Certificate x509Certificate = createCertificateContent(subject, issuer, request.getCertificateType());
+            try {
+                X509Certificate x509Certificate = createCertificateContent(subject, issuer, request.getCertificateType());
 
-            // Root sertifikat nema issuer u bazi
-            Certificate issuerCert = null;
-            String issuerSerialNumber = null;
-            User owner = null;
-            Organization organization = null;
+                // Root sertifikat nema issuer u bazi
+                Certificate issuerCert = null;
+                String issuerSerialNumber = null;
+                User owner = null;
+                Organization organization = null;
 
-            if (request.getCertificateType() == CertificateType.ROOT) {
-                // Root -> issuer = null, owner može biti null ili iz request-a
-                issuerSerialNumber = null;
-                owner = request.getSubject();
-                organization = null;
-                // Upis u root keystore
-                keystoreManager.writeRoot("root", subject.getPrivateKey(), x509Certificate);
+                if (request.getCertificateType() == CertificateType.ROOT) {
+                    // Root -> issuer = null, owner može biti null ili iz request-a
+                    issuerSerialNumber = null;
+                    owner = request.getSubject();
+                    organization = null;
+                    // Upis u root keystore
+                    keystoreManager.writeRoot("root", subject.getPrivateKey(), x509Certificate);
 
-            } else {
-                // Intermediate / End-Entity -> issuer info
-                issuerCert = certificateRepository.findById(request.getIssuer().getId())
-                        .orElseThrow(() -> new RuntimeException("Issuer certificate not found"));
+                } else {
+                    // Intermediate / End-Entity -> issuer info
+                    issuerCert = certificateRepository.findById(request.getIssuer().getId())
+                            .orElseThrow(() -> new RuntimeException("Issuer certificate not found"));
 
-                issuerSerialNumber = issuerCert.getSerialNumber();
-                owner =request.getSubject();
-                if(issuerCert.getOrganization()!=null) // dodato radi lakseg filtriranja kasnije
-                    organization=issuerCert.getOrganization();
-                else
-                    organization=owner.getOrganization();
+                    issuerSerialNumber = issuerCert.getSerialNumber();
+                    owner =request.getSubject();
+                    if(issuerCert.getOrganization()!=null) // dodato radi lakseg filtriranja kasnije
+                        organization=issuerCert.getOrganization();
+                    else
+                        organization=owner.getOrganization();
+                }
+
+                Certificate certificate = new Certificate(
+                        request.getCertificateType(),
+                        owner,
+                        x509Certificate.getSerialNumber().toString(),
+                        issuerSerialNumber,
+                        x509Certificate.getNotBefore(),
+                        x509Certificate.getNotAfter(),
+                        false,
+                        null,
+                        organization,
+                        encryptedPrivateKey,
+                        subject.getPublicKey().getEncoded()
+                );
+
+                certificateRepository.save(certificate);
+
+                return certificate;
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to create/save certificate", e);
             }
 
-            Certificate certificate = new Certificate(
-                    request.getCertificateType(),
-                    owner,
-                    x509Certificate.getSerialNumber().toString(),
-                    issuerSerialNumber,
-                    x509Certificate.getNotBefore(),
-                    x509Certificate.getNotAfter(),
-                    false,
-                    null,
-                    organization,
-                    encryptedPrivateKey,
-                    subject.getPublicKey().getEncoded()
-            );
 
-            certificateRepository.save(certificate);
-
-            return certificate;
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to create/save certificate", e);
+    }
+    private boolean validCertificateCreation(CertificateRequest request, Certificate issuer) {
+        // issuer ne sme biti END_ENTITY
+        if (issuer != null && issuer.getCertificateType() == CertificateType.END) {
+            return false;
         }
+
+        // ROOT može da se kreira samo ako još ne postoji nijedan ROOT
+        if (request.getCertificateType() == CertificateType.ROOT) {
+            boolean rootExists = certificateRepository.existsByCertificateType(CertificateType.ROOT);
+            if (rootExists) {
+                return false; // već postoji jedan root → ne dozvoljavamo novi
+            }
+            // takođe ROOT ne treba imati issuer
+            if (issuer != null) {
+                return false;
+            }
+        }
+
+        return true;
     }
     public CertificateIssuer buildIssuerFromCertificate(Certificate issuerCert, SecretKey orgDecryptedKey) throws Exception {
         CertificateIssuer issuer = new CertificateIssuer();
