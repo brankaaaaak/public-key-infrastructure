@@ -19,7 +19,7 @@ public class CertificateController {
     private ICertificateRequestService requestService;
 
     @PostMapping(value="/request", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<CertificateRequestDTO> createRequest(@RequestBody CreateCertificateRequestDTO dto) throws ChangeSetPersister.NotFoundException {
+    public ResponseEntity<CertificateRequestDTO> createRequest(@RequestBody CreateCertificateRequestDTO dto) throws Exception {
         CertificateRequestDTO created = requestService.createRequest(dto);
         return ResponseEntity.ok(created);
     }

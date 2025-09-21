@@ -7,7 +7,11 @@
     <input type="text" placeholder="Name" formControlName="name" />
     <input type="text" placeholder="Last name" formControlName="lastName" />
     <input type="email" placeholder="Email" formControlName="email" />
-    <input type="text" placeholder="Organization" formControlName="organization" />
+    <select formControlName="organization">
+      <option value="" disabled selected>Choose organization</option>
+      <option *ngFor="let org of organizations" [value]="org">{{ org }}</option>
+    </select>
+
 
     <input type="password" placeholder="Password"
            formControlName="password"

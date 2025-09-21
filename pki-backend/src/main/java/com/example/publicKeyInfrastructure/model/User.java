@@ -56,8 +56,6 @@ public class User implements UserDetails {
     public User(RegisterDTO dto){
         this.name = dto.getName();
         this.lastName = dto.getLastName();
-        //pripaziti na orgnizaciju koja je izmenjena
-        //this.organization = dto.getOrganization();
         this.email = dto.getEmail();
     }
 }
