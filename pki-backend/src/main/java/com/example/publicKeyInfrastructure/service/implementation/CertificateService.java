@@ -6,10 +6,8 @@ import com.example.publicKeyInfrastructure.data.CertificateIssuer;
 import com.example.publicKeyInfrastructure.data.CertificateSubject;
 import com.example.publicKeyInfrastructure.dto.CertificateDTO;
 import com.example.publicKeyInfrastructure.enumeration.CertificateType;
+import com.example.publicKeyInfrastructure.model.*;
 import com.example.publicKeyInfrastructure.model.Certificate;
-import com.example.publicKeyInfrastructure.model.CertificateRequest;
-import com.example.publicKeyInfrastructure.model.OrgKey;
-import com.example.publicKeyInfrastructure.model.User;
 import com.example.publicKeyInfrastructure.repository.ICertificateRepository;
 import com.example.publicKeyInfrastructure.repository.IOrgKeyRepository;
 import com.example.publicKeyInfrastructure.service.interfaces.ICertificateService;
@@ -57,17 +55,18 @@ public class CertificateService implements ICertificateService {
         CertificateSubject certificateSubject = createCertificateSubject(certificateRequest);
         CertificateIssuer certificateIssuer;
         byte[] encryptedPrivateKey;
-
+        Certificate issuerCert;
         if(certificateRequest.getIssuer() ==null || certificateRequest.getCertificateType()==CertificateType.ROOT){
             certificateIssuer = new CertificateIssuer(
                     certificateSubject.getX500name(),
                     certificateSubject.getPrivateKey(),
                     certificateSubject.getPublicKey());
             encryptedPrivateKey = masterKeyManager.encryptWithRoot(certificateSubject.getPrivateKey().getEncoded());
+            saveCertificateToDb(certificateRequest,certificateSubject,certificateIssuer,encryptedPrivateKey);
         }else{
             //to do i or ee
             // Uzima se issuer sertifikat iz baze
-            Certificate issuerCert= certificateRepository.findById(certificateRequest.getIssuer().getId())
+            issuerCert= certificateRepository.findById(certificateRequest.getIssuer().getId())
                     .orElseThrow(() -> new RuntimeException("Issuer certificate not found"));
 
             // Provera validnosti issuer-a
@@ -89,38 +88,63 @@ public class CertificateService implements ICertificateService {
             }
             // Šifrujemo privatni ključ novog sertifikata sa org key
             encryptedPrivateKey = CryptoUtils.encryptAES(certificateSubject.getPrivateKey().getEncoded(), decryptedOrgKey);
-        }
-        try{
-            X509Certificate x509Certificate = createCertificateContent(certificateSubject, certificateIssuer, certificateRequest.getCertificateType());
-            //to do -> upis u key store i save certificate u bazu
-            Certificate issuerCert= certificateRepository.findById(certificateRequest.getIssuer().getId())
-                    .orElseThrow(() -> new RuntimeException("Issuer certificate not found"));
-            if (issuerCert.getCertificateType() == CertificateType.END) {
-                throw new RuntimeException("Cannot use End-Entity certificate as issuer");
-            }
-
-            /*Certificate certificate = new Certificate(
-                    certificateRequest.getCertificateType(),
-                    certificateSubject .???          // User/Owner
-                    x509Certificate.getSerialNumber().toString(),            // serial number
-                    certificateIssuer.???,        // issuer serial number ili CN issuer-a
-                    x509Certificate.getNotBefore(),
-                    x509Certificate.getNotAfter(),
-                    false,                                                   // revoked
-                    null,                                                    // revocationReason
-                    certificateIssuer.,
-                    encryptedPrivateKey,
-                    certificateSubject.getPublicKey().getEncoded()
-            );
-
-            certificateRepository.save(certificate);*/
-
-
-        }catch (Exception e){
-
+            saveCertificateToDb(certificateRequest,certificateSubject,certificateIssuer,encryptedPrivateKey);
         }
         return null;
     }
+    private Certificate saveCertificateToDb(
+            CertificateRequest request,
+            CertificateSubject subject,
+            CertificateIssuer issuer,
+            byte[] encryptedPrivateKey) {
+        try {
+            X509Certificate x509Certificate = createCertificateContent(subject, issuer, request.getCertificateType());
+
+            // Root sertifikat nema issuer u bazi
+            Certificate issuerCert = null;
+            String issuerSerialNumber = null;
+            User owner = null;
+            Organization organization = null;
+
+            if (request.getCertificateType() == CertificateType.ROOT) {
+                // Root -> issuer = null, owner može biti null ili iz request-a
+                issuerSerialNumber = null;
+                owner = null;
+                organization = null;
+            } else {
+                // Intermediate / End-Entity -> issuer info
+                issuerCert = certificateRepository.findById(request.getIssuer().getId())
+                        .orElseThrow(() -> new RuntimeException("Issuer certificate not found"));
+
+                issuerSerialNumber = issuerCert.getSerialNumber();
+                owner = issuerCert.getOwner();
+                organization = issuerCert.getOrganization();
+            }
+
+            Certificate certificate = new Certificate(
+                    request.getCertificateType(),
+                    owner,
+                    x509Certificate.getSerialNumber().toString(),
+                    issuerSerialNumber,
+                    x509Certificate.getNotBefore(),
+                    x509Certificate.getNotAfter(),
+                    false,
+                    null,
+                    organization,
+                    encryptedPrivateKey,
+                    subject.getPublicKey().getEncoded()
+            );
+
+            certificateRepository.save(certificate);
+
+            // Opcionalno: upis u key store možeš dodati ovde
+
+            return certificate;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create/save certificate", e);
+        }
+    }
+
     public CertificateIssuer buildIssuerFromCertificate(Certificate issuerCert, SecretKey orgDecryptedKey) throws Exception {
         CertificateIssuer issuer = new CertificateIssuer();
 
