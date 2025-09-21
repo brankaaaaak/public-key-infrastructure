@@ -18,7 +18,7 @@ public class SubjectDTO {
         this.name = user.getName();
         this.lastName = user.getLastName();
         this.email = user.getEmail();
-        this.organization = user.getOrganization();
+        this.organization = user.getOrganization().getName();
     }
 }
 

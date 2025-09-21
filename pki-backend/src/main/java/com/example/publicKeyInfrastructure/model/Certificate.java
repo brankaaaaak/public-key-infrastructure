@@ -57,10 +57,26 @@ public class Certificate {
     @Column(name="private_key",nullable = false)
     private byte[] encryptedPrivateKey;
 
+    @Lob
+    @Column(name="public_key", nullable = false)
+    private byte[] publicKey;
+
     public boolean isValid() {
         Date now = new Date();
         return !now.before(validFrom) && now.before(validTo);
     }
-
+    public Certificate(CertificateType certificateType,User owner,String serialNumber,String issuerSerialNumber,Date validFrom,Date validTo,boolean revoked,String revocationReason,Organization organization,byte[] encryptedPrivateKey,byte[] publicKey){
+        this.certificateType=certificateType;
+        this.owner=owner;
+        this.serialNumber=serialNumber;
+        this.issuerSerialNumber=issuerSerialNumber;
+        this.validFrom=validFrom;
+        this.validTo=validTo;
+        this.revoked=revoked;
+        this.revocationReason=revocationReason;
+        this.organization=organization;
+        this.encryptedPrivateKey=encryptedPrivateKey;
+        this.publicKey=publicKey;
+    }
 
 }

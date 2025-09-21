@@ -4,6 +4,13 @@ import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import java.security.KeyFactory;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.cert.CertificateParsingException;
+import java.security.cert.X509Certificate;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 
 public class CryptoUtils {
 
@@ -63,4 +70,22 @@ public class CryptoUtils {
         }
         return data;
     }
+    public static SecretKey bytesToSecretKey(byte[] keyBytes) {
+        return new SecretKeySpec(keyBytes,"AES");
+    }
+    public static PrivateKey bytesToPrivateKey(byte[] keyBytes) throws Exception {
+        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        return keyFactory.generatePrivate(keySpec);
+    }
+    public static PublicKey bytesToPublicKey(byte[] keyBytes) throws Exception {
+        X509EncodedKeySpec keySpec = new X509EncodedKeySpec(keyBytes);
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        return keyFactory.generatePublic(keySpec);
+    }
+    public static boolean isCA(X509Certificate cert) throws CertificateParsingException {
+        // Čita BasicConstraints: ako je CA=true vraća true, inače false
+        return cert.getBasicConstraints() != -1;
+    }
+
 }

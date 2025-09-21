@@ -29,7 +29,7 @@ public class User implements UserDetails {
     private String email;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organization_id", nullable = true)
-    private String organization;
+    private Organization organization;
     @Column(name = "enabled", nullable = false)
     private boolean enabled;
     @JsonIgnore
@@ -57,7 +57,7 @@ public class User implements UserDetails {
         this.name = dto.getName();
         this.lastName = dto.getLastName();
         //pripaziti na orgnizaciju koja je izmenjena
-        this.organization = dto.getOrganization();
+        //this.organization = dto.getOrganization();
         this.email = dto.getEmail();
     }
 }

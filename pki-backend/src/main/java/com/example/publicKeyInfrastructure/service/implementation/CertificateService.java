@@ -1,13 +1,17 @@
 package com.example.publicKeyInfrastructure.service.implementation;
 
+import com.example.publicKeyInfrastructure.crypto.CryptoUtils;
+import com.example.publicKeyInfrastructure.crypto.MasterKeyManager;
 import com.example.publicKeyInfrastructure.data.CertificateIssuer;
 import com.example.publicKeyInfrastructure.data.CertificateSubject;
 import com.example.publicKeyInfrastructure.dto.CertificateDTO;
 import com.example.publicKeyInfrastructure.enumeration.CertificateType;
 import com.example.publicKeyInfrastructure.model.Certificate;
 import com.example.publicKeyInfrastructure.model.CertificateRequest;
+import com.example.publicKeyInfrastructure.model.OrgKey;
 import com.example.publicKeyInfrastructure.model.User;
 import com.example.publicKeyInfrastructure.repository.ICertificateRepository;
+import com.example.publicKeyInfrastructure.repository.IOrgKeyRepository;
 import com.example.publicKeyInfrastructure.service.interfaces.ICertificateService;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
@@ -25,6 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.SecretKey;
 import java.math.BigInteger;
 import java.security.*;
 import java.security.cert.CertificateException;
@@ -40,26 +45,83 @@ public class CertificateService implements ICertificateService {
     @Autowired
     ICertificateRepository certificateRepository;
 
+    @Autowired
+    private IOrgKeyRepository orgKeyRepository;
+
+    @Autowired
+    private MasterKeyManager masterKeyManager;
+
+
     @Override
     public CertificateDTO createCertificate(CertificateRequest certificateRequest) {
         CertificateSubject certificateSubject = createCertificateSubject(certificateRequest);
         CertificateIssuer certificateIssuer;
-        if(certificateRequest.getIssuer() ==null){
+        byte[] encryptedPrivateKey;
+
+        if(certificateRequest.getIssuer() ==null || certificateRequest.getCertificateType()==CertificateType.ROOT){
             certificateIssuer = new CertificateIssuer(
                     certificateSubject.getX500name(),
                     certificateSubject.getPrivateKey(),
                     certificateSubject.getPublicKey());
+            encryptedPrivateKey = masterKeyManager.encryptWithRoot(certificateSubject.getPrivateKey().getEncoded());
         }else{
             //to do i or ee
-            certificateIssuer = null;
+            // Uzima se issuer sertifikat iz baze
+            Certificate issuerCert= certificateRepository.findById(certificateRequest.getIssuer().getId())
+                    .orElseThrow(() -> new RuntimeException("Issuer certificate not found"));
+
+            // Provera validnosti issuer-a
+            if (!issuerCert.isValid() || issuerCert.isRevoked()) {
+                throw new RuntimeException("Issuer certificate is not valid");
+            }
+
+            // Uzimamo OrgKey za organizaciju korisnika koji prima sertifikat
+            OrgKey orgKey = orgKeyRepository.findByOrgId(issuerCert.getOrganization().getId());
+
+            byte[] orgKeyBytes = masterKeyManager.decryptWithRoot(orgKey.getEncryptedKey());
+            SecretKey decryptedOrgKey = CryptoUtils.bytesToSecretKey(orgKeyBytes);
+
+            // Kreiramo CertificateIssuer objekat
+            try {
+                certificateIssuer = buildIssuerFromCertificate(issuerCert, decryptedOrgKey);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            // Šifrujemo privatni ključ novog sertifikata sa org key
+            encryptedPrivateKey = CryptoUtils.encryptAES(certificateSubject.getPrivateKey().getEncoded(), decryptedOrgKey);
         }
         try{
             X509Certificate x509Certificate = createCertificateContent(certificateSubject, certificateIssuer, certificateRequest.getCertificateType());
             //to do -> upis u key store i save certificate u bazu
+            Certificate issuerCert= certificateRepository.findById(certificateRequest.getIssuer().getId())
+                    .orElseThrow(() -> new RuntimeException("Issuer certificate not found"));
+            if (issuerCert.getCertificateType() == CertificateType.END) {
+                throw new RuntimeException("Cannot use End-Entity certificate as issuer");
+            }
+            //Dodat konstruktor
+
         }catch (Exception e){
 
         }
         return null;
+    }
+    public CertificateIssuer buildIssuerFromCertificate(Certificate issuerCert, SecretKey orgDecryptedKey) throws Exception {
+        CertificateIssuer issuer = new CertificateIssuer();
+
+        byte[] decryptedBytes = CryptoUtils.decryptAES(issuerCert.getEncryptedPrivateKey(), orgDecryptedKey);
+        PrivateKey privateKey = CryptoUtils.bytesToPrivateKey(decryptedBytes);
+
+        // Uzme se javni ključ iz sertifikata (čuvati u bazi )
+        PublicKey publicKey = CryptoUtils.bytesToPublicKey(issuerCert.getPublicKey());
+
+        //Kreira se X500Name iz podataka o vlasniku
+        X500Name x500Name = buildX500Name(issuerCert.getOwner());
+
+        issuer.setPrivateKey(privateKey);
+        issuer.setPublicKey(publicKey);
+        issuer.setX500name(x500Name);
+
+        return issuer;
     }
 
     @Override
