@@ -6,6 +6,6 @@ import com.example.publicKeyInfrastructure.dto.CreateCertificateRequestDTO;
 import org.springframework.data.crossstore.ChangeSetPersister;
 
 public interface ICertificateRequestService {
-    CertificateRequestDTO createRequest(CreateCertificateRequestDTO request) throws ChangeSetPersister.NotFoundException;
+    CertificateRequestDTO createRequest(CreateCertificateRequestDTO request) throws Exception;
     public CertificateDTO acceptRequest(Long id) throws ChangeSetPersister.NotFoundException;
 }
