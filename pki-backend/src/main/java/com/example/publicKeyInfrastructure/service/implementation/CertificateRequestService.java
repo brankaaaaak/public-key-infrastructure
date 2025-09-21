@@ -8,6 +8,7 @@ import com.example.publicKeyInfrastructure.enumeration.RequestType;
 import com.example.publicKeyInfrastructure.model.Certificate;
 import com.example.publicKeyInfrastructure.model.CertificateRequest;
 import com.example.publicKeyInfrastructure.model.User;
+import com.example.publicKeyInfrastructure.repository.ICertificateRepository;
 import com.example.publicKeyInfrastructure.repository.ICertificateRequestRepository;
 import com.example.publicKeyInfrastructure.repository.IUserRepository;
 import com.example.publicKeyInfrastructure.service.interfaces.ICertificateRequestService;
@@ -32,15 +33,18 @@ public class CertificateRequestService implements ICertificateRequestService {
     @Autowired
     ICertificateService certificateService;
 
+    @Autowired
+    ICertificateRepository certificateRepository;
+
     @Override
-    public CertificateRequestDTO createRequest(CreateCertificateRequestDTO request) throws ChangeSetPersister.NotFoundException {
+    public CertificateRequestDTO createRequest(CreateCertificateRequestDTO request) throws Exception {
         CertificateRequest newRequest = new CertificateRequest(request);
         Certificate issuer;
         if(newRequest.getCertificateType() == CertificateType.ROOT){
             issuer = null;
         }else{
-            //to do -> when i or ee
-            issuer = null;
+            issuer = certificateRepository.findBySerialNumber(request.getIssuer())
+                    .orElseThrow(() -> new Exception("Certificate not found!"));
         }
         newRequest.setIssuer(issuer);
         User subject = getLoggedUser();
