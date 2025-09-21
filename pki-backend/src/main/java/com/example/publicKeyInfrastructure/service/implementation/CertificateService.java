@@ -10,6 +10,7 @@ import com.example.publicKeyInfrastructure.model.*;
 import com.example.publicKeyInfrastructure.model.Certificate;
 import com.example.publicKeyInfrastructure.repository.ICertificateRepository;
 import com.example.publicKeyInfrastructure.repository.IOrgKeyRepository;
+import com.example.publicKeyInfrastructure.repository.IUserRepository;
 import com.example.publicKeyInfrastructure.service.interfaces.ICertificateService;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
@@ -25,6 +26,8 @@ import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.crossstore.ChangeSetPersister;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -48,6 +51,9 @@ public class CertificateService implements ICertificateService {
 
     @Autowired
     private MasterKeyManager masterKeyManager;
+
+    @Autowired
+    private IUserRepository userRepository;
 
 
     @Override
@@ -109,7 +115,7 @@ public class CertificateService implements ICertificateService {
             if (request.getCertificateType() == CertificateType.ROOT) {
                 // Root -> issuer = null, owner može biti null ili iz request-a
                 issuerSerialNumber = null;
-                owner = null;
+                owner = request.getSubject();
                 organization = null;
             } else {
                 // Intermediate / End-Entity -> issuer info
@@ -117,8 +123,11 @@ public class CertificateService implements ICertificateService {
                         .orElseThrow(() -> new RuntimeException("Issuer certificate not found"));
 
                 issuerSerialNumber = issuerCert.getSerialNumber();
-                owner = issuerCert.getOwner();
-                organization = issuerCert.getOrganization();
+                owner =request.getSubject();
+                if(issuerCert.getOrganization()!=null)
+                    organization=issuerCert.getOrganization();
+                else
+                    organization=owner.getOrganization();
             }
 
             Certificate certificate = new Certificate(
@@ -267,5 +276,11 @@ public class CertificateService implements ICertificateService {
         certificate.verify(issuer.getPublicKey());
 
         return certificate;
+    }
+    private User getLoggedUser() throws ChangeSetPersister.NotFoundException {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        return userRepository.findByEmail(email)     //for owner
+                .orElseThrow(() -> new ChangeSetPersister.NotFoundException());
     }
 }
