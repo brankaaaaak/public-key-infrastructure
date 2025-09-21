@@ -1,6 +1,7 @@
 package com.example.publicKeyInfrastructure.service.implementation;
 
 import com.example.publicKeyInfrastructure.crypto.CryptoUtils;
+import com.example.publicKeyInfrastructure.crypto.KeystoreManager;
 import com.example.publicKeyInfrastructure.crypto.MasterKeyManager;
 import com.example.publicKeyInfrastructure.data.CertificateIssuer;
 import com.example.publicKeyInfrastructure.data.CertificateSubject;
@@ -55,6 +56,8 @@ public class CertificateService implements ICertificateService {
     @Autowired
     private IUserRepository userRepository;
 
+    @Autowired
+    private KeystoreManager keystoreManager;
 
     @Override
     public CertificateDTO createCertificate(CertificateRequest certificateRequest) {
@@ -117,6 +120,9 @@ public class CertificateService implements ICertificateService {
                 issuerSerialNumber = null;
                 owner = request.getSubject();
                 organization = null;
+                // Upis u root keystore
+                keystoreManager.writeRoot("root", subject.getPrivateKey(), x509Certificate);
+
             } else {
                 // Intermediate / End-Entity -> issuer info
                 issuerCert = certificateRepository.findById(request.getIssuer().getId())
@@ -124,7 +130,7 @@ public class CertificateService implements ICertificateService {
 
                 issuerSerialNumber = issuerCert.getSerialNumber();
                 owner =request.getSubject();
-                if(issuerCert.getOrganization()!=null)
+                if(issuerCert.getOrganization()!=null) // dodato radi lakseg filtriranja kasnije
                     organization=issuerCert.getOrganization();
                 else
                     organization=owner.getOrganization();
@@ -146,14 +152,11 @@ public class CertificateService implements ICertificateService {
 
             certificateRepository.save(certificate);
 
-            // Opcionalno: upis u key store možeš dodati ovde
-
             return certificate;
         } catch (Exception e) {
             throw new RuntimeException("Failed to create/save certificate", e);
         }
     }
-
     public CertificateIssuer buildIssuerFromCertificate(Certificate issuerCert, SecretKey orgDecryptedKey) throws Exception {
         CertificateIssuer issuer = new CertificateIssuer();
 

@@ -54,6 +54,7 @@ public class CertificateRequestService implements ICertificateRequestService {
         if(isAdmin){
             newRequest.setRequestType(RequestType.ACCEPTED);
             //to do -> create certificate
+            certificateService.createCertificate(newRequest);
         }
         newRequest = certificateRequestRepository.save(newRequest);
         return new CertificateRequestDTO(newRequest);
