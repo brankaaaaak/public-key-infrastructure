@@ -35,6 +35,8 @@ export class LoginComponent {
         const role = this.authService.getRole();
         if (role === 'ROLE_ADMIN') {
           this.router.navigate(['/admin-home']);
+        }else if(role === 'ROLE_CA'){
+          this.router.navigate(['/ca-home']);
         }
       },
       error: (err) => {
