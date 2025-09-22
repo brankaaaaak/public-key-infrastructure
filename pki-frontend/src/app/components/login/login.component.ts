@@ -38,6 +38,9 @@ export class LoginComponent {
         }else if(role === 'ROLE_CA'){
           this.router.navigate(['/ca-home']);
         }
+        else if(role === 'ROLE_USER'){
+          this.router.navigate(['/user-home']);
+        }
       },
       error: (err) => {
         this.loginFailed = true;

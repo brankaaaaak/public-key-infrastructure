@@ -7,6 +7,9 @@ import { AdminHomeComponent } from './components/admin-home/admin-home.component
 import { CreateRootCertificateComponent } from './components/create-root-certificate/create-root-certificate.component';
 import { CaHomeComponent } from './components/ca-home/ca-home.component';
 import { CaCreateIntermediateCertificateComponent } from './components/ca-create-intermediate-certificate/ca-create-intermediate-certificate.component';
+import { CaCreateEndCertificateComponent } from './components/ca-create-end-certificate/ca-create-end-certificate.component';
+import { UserCreateEndCertificateComponent } from './components/user-create-end-certificate/user-create-end-certificate.component';
+import { UserHomeComponent } from './components/user-home/user-home.component';
 
 export const routes: Routes = [
     { path: '', component: WelcomePageComponent },
@@ -19,5 +22,8 @@ export const routes: Routes = [
     { path: 'admin-home', component: AdminHomeComponent },
     { path: 'admin/create-root', component: CreateRootCertificateComponent },
     { path: 'ca-home', component: CaHomeComponent},
-    { path: 'ca/ca-create-intermediate-certificate', component: CaCreateIntermediateCertificateComponent}
+    { path: 'ca/ca-create-intermediate-certificate', component: CaCreateIntermediateCertificateComponent},
+    { path: 'ca/ca-create-end-certificate', component: CaCreateEndCertificateComponent},
+    { path: 'user-home', component: UserHomeComponent},
+    { path: 'user/user-create-end-certificate', component: UserCreateEndCertificateComponent}
 ];

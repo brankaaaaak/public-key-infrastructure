@@ -30,8 +30,7 @@ export class CaCreateIntermediateCertificateComponent {
         this.caCertificates = [root]; // dodaj root prvi
 
         // 2. Dohvati intermediate sertifikate za organizaciju
-        const orgId = 1; // ili uzmi iz logovanog usera/komponente
-        this.certificateService.getOrganizationCertificates(orgId).subscribe({
+        this.certificateService.getOrganizationCertificates().subscribe({
           next: (intermediates) => {
             this.caCertificates.push(...intermediates);
           },
