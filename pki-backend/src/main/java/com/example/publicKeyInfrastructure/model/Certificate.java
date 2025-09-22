@@ -1,11 +1,13 @@
 package com.example.publicKeyInfrastructure.model;
 
 import com.example.publicKeyInfrastructure.enumeration.CertificateType;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Type;
 
 import java.util.Date;
 
@@ -53,12 +55,10 @@ public class Certificate {
     @JoinColumn(name = "organization_id", nullable = true)
     private Organization organization;
 
-    @Lob
-    @Column(name="private_key",nullable = false)
+    @Column(name="encrypted_private_key",nullable = false,columnDefinition = "bytea")
     private byte[] encryptedPrivateKey;
 
-    @Lob
-    @Column(name="public_key", nullable = false)
+    @Column(name="public_key", nullable = false,columnDefinition = "bytea")
     private byte[] publicKey;
 
     public boolean isValid() {

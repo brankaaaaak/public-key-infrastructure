@@ -14,7 +14,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ICertificateRepository extends JpaRepository<Certificate, Long> {
-    Optional<Certificate> findBySerialNumber(String serialNumber);
+    @Query("SELECT c FROM Certificate c WHERE c.serialNumber = :serialNumber")
+    Optional<Certificate> findBySerialNumber(@Param("serialNumber") String serialNumber);
 
     boolean existsByCertificateType(CertificateType certificateType);
 
