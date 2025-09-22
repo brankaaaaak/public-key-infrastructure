@@ -13,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -31,11 +32,14 @@ public class CertificateController {
         CertificateRequestDTO created = requestService.createRequest(dto);
         return ResponseEntity.ok(created);
     }
-    @GetMapping("/organization/{orgId}/intermediate")
+    @GetMapping("/organization/intermediate")
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CA')")
-    public ResponseEntity<List<CertificateDTO>> getValidIntermediateCertificates(
-            @PathVariable Long orgId) {
-        return ResponseEntity.ok(certificateService.getValidIntermediateCertificatesByOrganization(orgId));
+    public ResponseEntity<List<CertificateDTO>> getValidIntermediateCertificates() {
+        try{
+            return ResponseEntity.ok(certificateService.getValidIntermediateCertificatesByOrganization());
+        } catch (Exception e) {
+            return ResponseEntity.ok(Collections.emptyList());
+        }
     }
 
     // GET valid root certificate

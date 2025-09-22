@@ -315,7 +315,8 @@ public class CertificateService implements ICertificateService {
                 .orElseThrow(() -> new ChangeSetPersister.NotFoundException());
     }
     @Override
-    public List<CertificateDTO> getValidIntermediateCertificatesByOrganization(Long organizationId) {
+    public List<CertificateDTO> getValidIntermediateCertificatesByOrganization() throws Exception {
+        Long organizationId=getLoggedUser().getOrganization().getId();
         return certificateRepository.findValidIntermediateByOrganization(organizationId);
     }
     @Override

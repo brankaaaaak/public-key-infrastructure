@@ -9,7 +9,7 @@ import java.util.List;
 public interface ICertificateService {
     CertificateDTO createCertificate(CertificateRequest certificateRequest);
     public Boolean checkingValidation(String serialNumber) throws ChangeSetPersister.NotFoundException;
-    List<CertificateDTO> getValidIntermediateCertificatesByOrganization(Long orgId);
+    List<CertificateDTO> getValidIntermediateCertificatesByOrganization() throws Exception;
     public CertificateDTO getValidRootCertificate();
 
 
