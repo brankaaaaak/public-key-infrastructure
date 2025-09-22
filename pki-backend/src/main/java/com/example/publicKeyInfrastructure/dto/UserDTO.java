@@ -24,7 +24,10 @@ public class UserDTO {
         this.name = user.getName();
         this.lastName = user.getLastName();
         this.email = user.getEmail();
-        this.organization = user.getOrganization().getName();
+        if(user.getOrganization()!=null)
+            this.organization = user.getOrganization().getName();
+        else
+            this.organization=null;
         this.enabled = user.isEnabled();
     }
 

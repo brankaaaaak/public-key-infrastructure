@@ -44,6 +44,7 @@ import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 @Service
 public class CertificateService implements ICertificateService {
@@ -317,14 +318,18 @@ public class CertificateService implements ICertificateService {
     @Override
     public List<CertificateDTO> getValidIntermediateCertificatesByOrganization() throws Exception {
         Long organizationId=getLoggedUser().getOrganization().getId();
-        return certificateRepository.findValidIntermediateByOrganization(organizationId);
+        List<Certificate> certificates = certificateRepository.findValidIntermediateByOrganization(organizationId);
+
+        return certificates.stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
     }
     @Override
     public CertificateDTO getValidRootCertificate() {
-        CertificateDTO root = certificateRepository
+        Certificate root = certificateRepository
                 .findValidRootCertificate()
                 .orElseThrow(() -> new RuntimeException("Root certificate not found"));
-        return root;
+        return mapToDTO(root);
     }
 
     private CertificateDTO mapToDTO(Certificate certificate) {

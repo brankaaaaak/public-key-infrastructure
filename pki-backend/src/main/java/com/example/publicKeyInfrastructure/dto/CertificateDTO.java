@@ -18,7 +18,7 @@ public class CertificateDTO {
     private CertificateType certificateType;
     private String serialNumber;
     private String owner;
-    private String organizationName;
+    private String organization;
     private Date validFrom;
     private Date validTo;
     public CertificateDTO(Certificate certificate){
@@ -26,7 +26,10 @@ public class CertificateDTO {
         this.certificateType=certificate.getCertificateType();
         this.serialNumber=certificate.getSerialNumber();
         this.owner=certificate.getOwner().getEmail();
-        this.organizationName=certificate.getOrganization().getName();
+        if(certificate.getOrganization()!=null)
+            this.organization=certificate.getOrganization().getName();
+        else
+            this.organization=null;
         this.validFrom=certificate.getValidFrom();
         this.validTo=certificate.getValidTo();
     }
