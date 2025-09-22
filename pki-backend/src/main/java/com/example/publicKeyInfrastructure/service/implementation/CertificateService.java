@@ -6,6 +6,7 @@ import com.example.publicKeyInfrastructure.crypto.MasterKeyManager;
 import com.example.publicKeyInfrastructure.data.CertificateIssuer;
 import com.example.publicKeyInfrastructure.data.CertificateSubject;
 import com.example.publicKeyInfrastructure.dto.CertificateDTO;
+import com.example.publicKeyInfrastructure.dto.UserDTO;
 import com.example.publicKeyInfrastructure.enumeration.CertificateType;
 import com.example.publicKeyInfrastructure.model.*;
 import com.example.publicKeyInfrastructure.model.Certificate;
@@ -26,6 +27,7 @@ import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cglib.core.Local;
 import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -36,9 +38,11 @@ import java.math.BigInteger;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.List;
 import java.util.Random;
 
 @Service
@@ -309,5 +313,20 @@ public class CertificateService implements ICertificateService {
         String email = authentication.getName();
         return userRepository.findByEmail(email)     //for owner
                 .orElseThrow(() -> new ChangeSetPersister.NotFoundException());
+    }
+    @Override
+    public List<CertificateDTO> getValidIntermediateCertificatesByOrganization(Long organizationId) {
+        return certificateRepository.findValidIntermediateByOrganization(organizationId);
+    }
+    @Override
+    public CertificateDTO getValidRootCertificate() {
+        CertificateDTO root = certificateRepository
+                .findValidRootCertificate()
+                .orElseThrow(() -> new RuntimeException("Root certificate not found"));
+        return root;
+    }
+
+    private CertificateDTO mapToDTO(Certificate certificate) {
+        return new CertificateDTO(certificate);
     }
 }
