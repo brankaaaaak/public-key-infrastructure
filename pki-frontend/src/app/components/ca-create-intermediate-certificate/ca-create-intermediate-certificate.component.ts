@@ -1,11 +1,12 @@
 import { Component } from '@angular/core';
 import { CertificateService } from '../../services/certificate.service';
 import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-ca-create-intermediate-certificate',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule,CommonModule],
   templateUrl: './ca-create-intermediate-certificate.component.html',
   styleUrl: './ca-create-intermediate-certificate.component.scss'
 })
@@ -13,19 +14,52 @@ export class CaCreateIntermediateCertificateComponent {
   successMessage = '';
   errorMessage = '';
   durationInDays:number=0;
+  caCertificates:any=[];
+  selectedIssuerSerialNumber: string | null = null;
 
   constructor(private certificateService: CertificateService) {}
+
+   ngOnInit(): void {
+    this.loadCertificates();
+  }
   
-  createRootCertificate(): void {
+   private loadCertificates(): void {
+    // 1. Dohvati root sertifikat
+    this.certificateService.getRootCertificate().subscribe({
+      next: (root) => {
+        this.caCertificates = [root]; // dodaj root prvi
+
+        // 2. Dohvati intermediate sertifikate za organizaciju
+        const orgId = 1; // ili uzmi iz logovanog usera/komponente
+        this.certificateService.getOrganizationCertificates(orgId).subscribe({
+          next: (intermediates) => {
+            this.caCertificates.push(...intermediates);
+          },
+          error: (err) => {
+            console.error('Error fetching intermediate certificates', err);
+          }
+        });
+      },
+      error: (err) => {
+        console.error('Error fetching root certificate', err);
+      }
+    });
+  }
+  
+  createIntermediateCertificate(): void {
+    if (!this.selectedIssuerSerialNumber) {
+      this.errorMessage = 'Please select an issuer certificate.';
+      return;
+    }
     const request = {
       certificateType: 'INTERMEDIATE',
-      issuer: null,
+      issuer: this.selectedIssuerSerialNumber,
       durationInDays:this.durationInDays
     };
 
     this.certificateService.createCertificateRequest(request).subscribe({
       next: (response) => {
-        this.successMessage = 'Intermediate certificate created successfully!';
+        this.successMessage = 'Request for Intermediate certificate created successfully! Waiting for approval!';
         this.errorMessage = '';
       },
       error: (error) => {
