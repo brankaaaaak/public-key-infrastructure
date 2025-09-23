@@ -29,6 +29,16 @@ export class CertificateService {
               }
     return this.http.get<any>(`${environment.apiHost}/api/certificate/root`,{headers});
   }
+  getPendingRequests(): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiHost}/api/certificate/admin-requests/pending`);
+  }
 
+  approveRequest(id: number): Observable<void> {
+    return this.http.put<void>(`${environment.apiHost}/api/certificate/request/${id}/approve`, {});
+  }
+
+  rejectRequest(id: number, reason: string): Observable<void> {
+    return this.http.put<void>(`${environment.apiHost}/api/certificate/request/${id}/reject`, { refusalReason: reason });
+  }
 
 }

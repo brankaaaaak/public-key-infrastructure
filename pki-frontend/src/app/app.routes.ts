@@ -10,6 +10,8 @@ import { CaCreateIntermediateCertificateComponent } from './components/ca-create
 import { CaCreateEndCertificateComponent } from './components/ca-create-end-certificate/ca-create-end-certificate.component';
 import { UserCreateEndCertificateComponent } from './components/user-create-end-certificate/user-create-end-certificate.component';
 import { UserHomeComponent } from './components/user-home/user-home.component';
+import { AdminManageRequestsComponent } from './components/admin-manage-requests/admin-manage-requests.component';
+import { provideAnimations } from '@angular/platform-browser/animations';
 
 export const routes: Routes = [
     { path: '', component: WelcomePageComponent },
@@ -17,7 +19,7 @@ export const routes: Routes = [
     { 
     path: 'register', 
     component: RegisterComponent,
-    providers: [provideHttpClient()]  
+    providers: [provideHttpClient(),provideAnimations()]  
     },
     { path: 'admin-home', component: AdminHomeComponent },
     { path: 'admin/create-root', component: CreateRootCertificateComponent },
@@ -25,5 +27,6 @@ export const routes: Routes = [
     { path: 'ca/ca-create-intermediate-certificate', component: CaCreateIntermediateCertificateComponent},
     { path: 'ca/ca-create-end-certificate', component: CaCreateEndCertificateComponent},
     { path: 'user-home', component: UserHomeComponent},
-    { path: 'user/user-create-end-certificate', component: UserCreateEndCertificateComponent}
+    { path: 'user/user-create-end-certificate', component: UserCreateEndCertificateComponent},
+    { path: 'admin/requests', component: AdminManageRequestsComponent}
 ];
