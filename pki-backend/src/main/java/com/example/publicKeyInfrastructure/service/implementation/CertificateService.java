@@ -199,8 +199,6 @@ public class CertificateService implements ICertificateService {
             } catch (Exception e) {
                 throw new RuntimeException("Failed to create/save certificate", e);
             }
-
-
     }
     private boolean validCertificateCreation(CertificateRequest request, Certificate issuer) {
         // issuer ne sme biti END_ENTITY
@@ -227,11 +225,11 @@ public class CertificateService implements ICertificateService {
         byte[] decryptedBytes ;
         PrivateKey privateKey;
         if(issuerCert.getCertificateType()==CertificateType.ROOT){
-            decryptedBytes = CryptoUtils.decryptAES(issuerCert.getEncryptedPrivateKey(),orgDecryptedKey);
+            decryptedBytes = CryptoUtils.decryptAES(issuerCert.getEncryptedPrivateKey(),masterKeyManager.getRootKey());
             privateKey = CryptoUtils.bytesToPrivateKey(decryptedBytes);
         }
         else{
-            decryptedBytes = CryptoUtils.decryptAES(issuerCert.getEncryptedPrivateKey(),masterKeyManager.getRootKey());
+            decryptedBytes = CryptoUtils.decryptAES(issuerCert.getEncryptedPrivateKey(),orgDecryptedKey);
             privateKey = CryptoUtils.bytesToPrivateKey(decryptedBytes);
         }
 
