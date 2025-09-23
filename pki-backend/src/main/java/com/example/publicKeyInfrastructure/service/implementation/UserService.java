@@ -79,7 +79,7 @@ public class UserService implements IUserService{
         VerificationToken verificationToken = new VerificationToken(user, token, Duration.ofHours(1));
         verificationTokenRepository.save(verificationToken);
 
-        String confirmationUrl = "http://localhost:8080/api/users/verify-email?token=" + token;
+        String confirmationUrl = "https://localhost:8443/api/users/verify-email?token=" + token;
         emailService.sendEmail(user.getEmail(), "Email Verification", "Click to verify: " + confirmationUrl);
         return new UserDTO(user);
     }
