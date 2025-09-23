@@ -6,8 +6,10 @@ import com.example.publicKeyInfrastructure.crypto.MasterKeyManager;
 import com.example.publicKeyInfrastructure.data.CertificateIssuer;
 import com.example.publicKeyInfrastructure.data.CertificateSubject;
 import com.example.publicKeyInfrastructure.dto.CertificateDTO;
+import com.example.publicKeyInfrastructure.dto.CertificateRequestViewDTO;
 import com.example.publicKeyInfrastructure.dto.UserDTO;
 import com.example.publicKeyInfrastructure.enumeration.CertificateType;
+import com.example.publicKeyInfrastructure.enumeration.RequestType;
 import com.example.publicKeyInfrastructure.model.*;
 import com.example.publicKeyInfrastructure.model.Certificate;
 import com.example.publicKeyInfrastructure.repository.ICertificateRepository;
@@ -33,6 +35,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import java.math.BigInteger;
 import java.security.*;
@@ -43,6 +46,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 
@@ -65,7 +69,7 @@ public class CertificateService implements ICertificateService {
     private KeystoreManager keystoreManager;
 
     @Override
-    public CertificateDTO createCertificate(CertificateRequest certificateRequest) {
+    public CertificateDTO createCertificate(CertificateRequest certificateRequest){
         CertificateSubject certificateSubject = createCertificateSubject(certificateRequest);
         CertificateIssuer certificateIssuer;
         byte[] encryptedPrivateKey;
@@ -88,13 +92,36 @@ public class CertificateService implements ICertificateService {
             if (!issuerCert.isValid() || issuerCert.isRevoked()) {
                 throw new RuntimeException("Issuer certificate is not valid");
             }
-
+            SecretKey decryptedOrgKey;
             // Uzimamo OrgKey za organizaciju korisnika koji prima sertifikat
-            OrgKey orgKey = orgKeyRepository.findByOrgId(issuerCert.getOrganization().getId());
+            if(issuerCert.getOrganization()!=null) {
+                if(orgKeyRepository.findByOrgId(issuerCert.getOrganization().getId())==null){
+                    try{
+                    KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+                    keyGen.init(256);
+                    SecretKey newMasterKey = keyGen.generateKey();
 
-            byte[] orgKeyBytes = masterKeyManager.decryptWithRoot(orgKey.getEncryptedKey());
-            SecretKey decryptedOrgKey = CryptoUtils.bytesToSecretKey(orgKeyBytes);
+                    // Šifruj sa root key
+                    byte[] encryptedKey =masterKeyManager.encryptWithRoot(newMasterKey.getEncoded());
 
+                    // Sačuvaj u bazu
+                    OrgKey key = new OrgKey();
+                    key.setOrganization(issuerCert.getOrganization());
+                    key.setEncryptedKey(encryptedKey);
+                    orgKeyRepository.save(key);
+                    }
+                    catch (Exception e){
+
+                    }
+                }
+                OrgKey key = orgKeyRepository.findByOrgId(issuerCert.getOrganization().getId());
+                byte[] orgKeyBytes = masterKeyManager.decryptWithRoot(key.getEncryptedKey());
+                decryptedOrgKey = CryptoUtils.bytesToSecretKey(orgKeyBytes);
+            }
+            else{
+                //Ukoliko je issuer root a nema orgnizaciju
+                decryptedOrgKey = masterKeyManager.getRootKey();
+            }
             // Kreiramo CertificateIssuer objekat
             try {
                 certificateIssuer = buildIssuerFromCertificate(issuerCert, decryptedOrgKey);
@@ -137,10 +164,19 @@ public class CertificateService implements ICertificateService {
 
                     issuerSerialNumber = issuerCert.getSerialNumber();
                     owner =request.getSubject();
-                    if(issuerCert.getOrganization()!=null) // dodato radi lakseg filtriranja kasnije
-                        organization=issuerCert.getOrganization();
-                    else
-                        organization=owner.getOrganization();
+                    String alias="";
+                    Long orgId;
+                    if(issuerCert.getOrganization()!=null) {// dodato radi lakseg filtriranja kasnije
+                        organization = issuerCert.getOrganization();
+                        orgId=organization.getId();
+                    }
+                    else {
+                        organization = owner.getOrganization();
+                        orgId=organization.getId();
+                    }
+                    alias=subject.getSerialNumber();
+                    keystoreManager.writeForOrganization(orgId,alias,subject.getPrivateKey(), x509Certificate);
+
                 }
 
                 Certificate certificate = new Certificate(
@@ -188,9 +224,16 @@ public class CertificateService implements ICertificateService {
     }
     public CertificateIssuer buildIssuerFromCertificate(Certificate issuerCert, SecretKey orgDecryptedKey) throws Exception {
         CertificateIssuer issuer = new CertificateIssuer();
-
-        byte[] decryptedBytes = CryptoUtils.decryptAES(issuerCert.getEncryptedPrivateKey(), orgDecryptedKey);
-        PrivateKey privateKey = CryptoUtils.bytesToPrivateKey(decryptedBytes);
+        byte[] decryptedBytes ;
+        PrivateKey privateKey;
+        if(issuerCert.getCertificateType()==CertificateType.ROOT){
+            decryptedBytes = CryptoUtils.decryptAES(issuerCert.getEncryptedPrivateKey(),orgDecryptedKey);
+            privateKey = CryptoUtils.bytesToPrivateKey(decryptedBytes);
+        }
+        else{
+            decryptedBytes = CryptoUtils.decryptAES(issuerCert.getEncryptedPrivateKey(),masterKeyManager.getRootKey());
+            privateKey = CryptoUtils.bytesToPrivateKey(decryptedBytes);
+        }
 
         // Uzme se javni ključ iz sertifikata (čuvati u bazi )
         PublicKey publicKey = CryptoUtils.bytesToPublicKey(issuerCert.getPublicKey());

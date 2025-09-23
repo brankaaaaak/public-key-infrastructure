@@ -16,9 +16,8 @@ public class OrgKey {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // enkriptovan ključ (blob u bazi)
-    @Lob
-    @Column(name="organization_key",nullable = false)
+    // enkriptovan ključ
+    @Column(name="organization_key",nullable = false,columnDefinition = "bytea")
     private byte[] encryptedKey;
 
     // 1:1 veza ka Organization

@@ -118,6 +118,16 @@ public class CertificateRequestService implements ICertificateRequestService {
                 .map(cr -> new CertificateRequestViewDTO(cr))
                 .toList();
     }
+    @Override
+    public CertificateRequestViewDTO denyRequest(Long id, String reason) {
+        CertificateRequest request = certificateRequestRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Request not found"));
 
+        request.setRequestType(RequestType.REFUSED);
+        request.setRefusalReason(reason);
+        certificateRequestRepository.save(request);
+
+        return new CertificateRequestViewDTO(request);
+    }
 
 }

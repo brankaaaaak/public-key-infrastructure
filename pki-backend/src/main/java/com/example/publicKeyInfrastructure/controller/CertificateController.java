@@ -8,6 +8,7 @@ import com.example.publicKeyInfrastructure.service.interfaces.ICertificateReques
 import com.example.publicKeyInfrastructure.service.interfaces.ICertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.crossstore.ChangeSetPersister;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -15,7 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/certificate")
@@ -68,6 +71,26 @@ public class CertificateController {
         } catch (Exception e) {
             return ResponseEntity.ok(Collections.emptyList());
         }
-
+    }
+    @PutMapping("/request/{id}/approve")
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CA')")
+    public ResponseEntity<?> approveRequest(@PathVariable Long id) {
+        try{
+            CertificateDTO dto = requestService.acceptRequest(id);
+            return ResponseEntity.ok(dto);
+        }
+        catch (ChangeSetPersister.NotFoundException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Certificate request not found with id: " + id);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        }
+    }
+    @PutMapping("/request/{id}/deny")
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CA')")
+    public ResponseEntity<CertificateRequestViewDTO> denyRequest(@PathVariable Long id,
+                                                                 @RequestBody Map<String, String> body) {
+        String reason = body.get("reason");
+        CertificateRequestViewDTO dto = requestService.denyRequest(id, reason);
+        return ResponseEntity.ok(dto);
     }
 }

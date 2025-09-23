@@ -13,6 +13,10 @@ public class MasterKeyManager {
         this.rootKey = CryptoUtils.hexToAesKey(rootKeyHex);
     }
 
+    public SecretKey getRootKey() {
+        return rootKey;
+    }
+
     public byte[] encryptWithRoot(byte[] data) {
         return CryptoUtils.encryptAES(data, rootKey);
     }

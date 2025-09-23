@@ -4,6 +4,8 @@ import com.example.publicKeyInfrastructure.dto.CertificateDTO;
 import com.example.publicKeyInfrastructure.model.CertificateRequest;
 import org.springframework.data.crossstore.ChangeSetPersister;
 
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.util.List;
 
 public interface ICertificateService {
