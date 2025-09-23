@@ -2,6 +2,7 @@ package com.example.publicKeyInfrastructure.service.implementation;
 
 import com.example.publicKeyInfrastructure.dto.CertificateDTO;
 import com.example.publicKeyInfrastructure.dto.CertificateRequestDTO;
+import com.example.publicKeyInfrastructure.dto.CertificateRequestViewDTO;
 import com.example.publicKeyInfrastructure.dto.CreateCertificateRequestDTO;
 import com.example.publicKeyInfrastructure.enumeration.CertificateType;
 import com.example.publicKeyInfrastructure.enumeration.RequestType;
@@ -20,6 +21,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class CertificateRequestService implements ICertificateRequestService {
@@ -99,5 +101,23 @@ public class CertificateRequestService implements ICertificateRequestService {
         return userRepository.findByEmail(email)     //for owner
                 .orElseThrow(() -> new ChangeSetPersister.NotFoundException());
     }
+    public List<CertificateRequestViewDTO> getPendingRequestsForLoggedOwner() throws Exception{
+        Long ownerId = getLoggedUser().getId();
+        List<CertificateRequest> requests = certificateRequestRepository
+                .findPendingRequestsByOwnerCertificates(ownerId, RequestType.PENDING);
+
+        return requests.stream()
+                .map(cr -> new CertificateRequestViewDTO(cr))
+                .toList();
+    }
+    public List<CertificateRequestViewDTO> getPendingRequestsForAdmin() throws Exception{
+        List<CertificateRequest> requests = certificateRequestRepository
+                .findPendingRequestsCertificates(RequestType.PENDING);
+
+        return requests.stream()
+                .map(cr -> new CertificateRequestViewDTO(cr))
+                .toList();
+    }
+
 
 }

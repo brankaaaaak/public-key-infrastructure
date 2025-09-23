@@ -2,6 +2,7 @@ package com.example.publicKeyInfrastructure.controller;
 
 import com.example.publicKeyInfrastructure.dto.CertificateDTO;
 import com.example.publicKeyInfrastructure.dto.CertificateRequestDTO;
+import com.example.publicKeyInfrastructure.dto.CertificateRequestViewDTO;
 import com.example.publicKeyInfrastructure.dto.CreateCertificateRequestDTO;
 import com.example.publicKeyInfrastructure.service.interfaces.ICertificateRequestService;
 import com.example.publicKeyInfrastructure.service.interfaces.ICertificateService;
@@ -47,5 +48,26 @@ public class CertificateController {
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CA')")
     public ResponseEntity<CertificateDTO> getValidRootCertificate() {
         return ResponseEntity.ok(certificateService.getValidRootCertificate());
+    }
+    @GetMapping("/admin-requests/pending")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<List<CertificateRequestViewDTO>> getPendingRequestsAdmin() {
+        try {
+            List<CertificateRequestViewDTO> dtos = requestService.getPendingRequestsForAdmin();
+            return ResponseEntity.ok(dtos);
+        } catch (Exception e) {
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+    }
+    @GetMapping("/ca-requests/pending")
+    @PreAuthorize("hasRole('ROLE_CA')")
+    public ResponseEntity<List<CertificateRequestViewDTO>> getPendingRequestsCA() {
+        try {
+            List<CertificateRequestViewDTO> dtos = requestService.getPendingRequestsForLoggedOwner();
+            return ResponseEntity.ok(dtos);
+        } catch (Exception e) {
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+
     }
 }
