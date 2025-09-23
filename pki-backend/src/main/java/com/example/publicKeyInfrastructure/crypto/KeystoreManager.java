@@ -1,6 +1,7 @@
 package com.example.publicKeyInfrastructure.crypto;
 
 import com.example.publicKeyInfrastructure.data.CertificateIssuer;
+import com.example.publicKeyInfrastructure.repository.ICertificateRepository;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,13 +10,14 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.io.*;
 import java.security.*;
+import java.security.cert.*;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateEncodingException;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Component
 public class KeystoreManager {
+
     private final KeyStore keyStore;
     private final char[] password;
 
@@ -26,8 +28,8 @@ public class KeystoreManager {
         this.password = passwordEnv.toCharArray();
 
         try {
-            this.keyStore = KeyStore.getInstance("JKS"); // inicijalizuje KeyStore objekat
-            this.keyStore.load(null, password); // prazni KeyStore sa lozinkom
+            this.keyStore = KeyStore.getInstance("JKS");
+            this.keyStore.load(null, password);
         } catch (KeyStoreException | NoSuchAlgorithmException | CertificateException | IOException e) {
             throw new RuntimeException("Failed to initialize KeyStore", e);
         }
@@ -38,47 +40,59 @@ public class KeystoreManager {
         return password;
     }
 
-    /** =================== ORG KEYSTORE FILE =================== */
     private String getOrgKeyStoreFile(Long organizationId) {
-        String folder = "keystores"; // ili iz konfiguracije
+        String folder = "keystores";
         File dir = new File(folder);
-        if (!dir.exists()) dir.mkdirs(); // kreira folder ako ne postoji
+        if (!dir.exists()) dir.mkdirs();
         return folder + File.separator + "org_" + organizationId + ".jks";
     }
 
+    private String getRootKeyStoreFile() {
+        String folder = "keystores";
+        File dir = new File(folder);
+        if (!dir.exists()) dir.mkdirs();
+        return folder + File.separator + "root.jks";
+
+    }
     /** =================== WRITER =================== */
-    public void write(String keyStoreFile, String alias, PrivateKey privateKey, Certificate certificate) {
+    private void write(String keyStoreFile, String alias, PrivateKey privateKey, X509Certificate[] chain) {
         try {
-            // load ili kreiraj novi keystore
             keyStore.load(keyStoreFile != null && new File(keyStoreFile).exists() ?
                     new FileInputStream(keyStoreFile) : null, getPassword());
 
-            keyStore.setKeyEntry(alias, privateKey, getPassword(), new Certificate[]{certificate});
+            keyStore.setKeyEntry(alias, privateKey, getPassword(), chain);
             keyStore.store(new FileOutputStream(keyStoreFile), getPassword());
         } catch (Exception e) {
             throw new RuntimeException("Failed to write to KeyStore", e);
         }
     }
 
-    /** =================== WRITER ZA ORG =================== */
-    public void writeForOrganization(Long orgId, String alias, PrivateKey privateKey, Certificate certificate) {
+    public void writeForOrganization(Long orgId, String alias, PrivateKey privateKey, X509Certificate[] chain) {
         String keyStoreFile = getOrgKeyStoreFile(orgId);
-        write(keyStoreFile, alias, privateKey, certificate);
+        write(keyStoreFile, alias, privateKey, chain);
     }
+
+    /** =================== WRITER ZA ROOT =================== */
+    public void writeRoot(String alias, PrivateKey privateKey, X509Certificate certificate) {
+        String keyStoreFile = getRootKeyStoreFile();
+        write(keyStoreFile, alias, privateKey, new X509Certificate[]{certificate});
+    }
+
+
 
     /** =================== READER =================== */
     public CertificateIssuer readIssuer(String keyStoreFile, String alias) {
         try {
             keyStore.load(new FileInputStream(keyStoreFile), getPassword());
 
-            Certificate cert = keyStore.getCertificate(alias);
+            X509Certificate cert = (X509Certificate) keyStore.getCertificate(alias);
             if (cert == null) throw new RuntimeException("Certificate not found for alias: " + alias);
 
             PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, getPassword());
             if (privateKey == null) throw new RuntimeException("Private key not found for alias: " + alias);
 
-            X500Name issuerName = new JcaX509CertificateHolder((X509Certificate) cert).getSubject();
-            return new CertificateIssuer(issuerName,privateKey, cert.getPublicKey());
+            X500Name issuerName = new JcaX509CertificateHolder(cert).getSubject();
+            return new CertificateIssuer(issuerName, privateKey, cert.getPublicKey());
 
         } catch (Exception e) {
             throw new RuntimeException("Failed to read issuer from KeyStore", e);
@@ -131,19 +145,5 @@ public class KeystoreManager {
             throw new RuntimeException("Failed to download certificate", e);
         }
     }
-
-    /** =================== WRITER ZA ROOT =================== */
-    private String getRootKeyStoreFile() {
-        String folder = "keystores"; // relativno u odnosu na radni folder JVM-a
-        File dir = new File(folder);
-        if (!dir.exists()) dir.mkdirs();
-        return folder + File.separator + "root.jks";
-    }
-
-    public void writeRoot(String alias, PrivateKey privateKey, Certificate certificate) {
-        String keyStoreFile = getRootKeyStoreFile();
-        write(keyStoreFile, alias, privateKey, certificate);
-    }
-
-
 }
+

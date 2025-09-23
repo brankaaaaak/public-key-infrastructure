@@ -37,17 +37,16 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
+import java.io.ByteArrayInputStream;
 import java.math.BigInteger;
 import java.security.*;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -92,8 +91,8 @@ public class CertificateService implements ICertificateService {
             if (!issuerCert.isValid() || issuerCert.isRevoked()) {
                 throw new RuntimeException("Issuer certificate is not valid");
             }
-            SecretKey decryptedOrgKey;
-            // Uzimamo OrgKey za organizaciju korisnika koji prima sertifikat
+            SecretKey decryptedOrgKeyIssuer;
+            // Uzimamo OrgKey za issuera
             if(issuerCert.getOrganization()!=null) {
                 if(orgKeyRepository.findByOrgId(issuerCert.getOrganization().getId())==null){
                     try{
@@ -114,27 +113,32 @@ public class CertificateService implements ICertificateService {
 
                     }
                 }
-                OrgKey key = orgKeyRepository.findByOrgId(issuerCert.getOrganization().getId());
+                OrgKey key = orgKeyRepository.findByOrgId(certificateRequest.getSubject().getOrganization().getId());
                 byte[] orgKeyBytes = masterKeyManager.decryptWithRoot(key.getEncryptedKey());
-                decryptedOrgKey = CryptoUtils.bytesToSecretKey(orgKeyBytes);
+                decryptedOrgKeyIssuer = CryptoUtils.bytesToSecretKey(orgKeyBytes);
             }
             else{
                 //Ukoliko je issuer root a nema orgnizaciju
-                decryptedOrgKey = masterKeyManager.getRootKey();
+                decryptedOrgKeyIssuer = masterKeyManager.getRootKey();
             }
             // Kreiramo CertificateIssuer objekat
             try {
-                certificateIssuer = buildIssuerFromCertificate(issuerCert, decryptedOrgKey);
+                certificateIssuer = buildIssuerFromCertificate(issuerCert, decryptedOrgKeyIssuer);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
             // Šifrujemo privatni ključ novog sertifikata sa org key
+            OrgKey key = orgKeyRepository.findByOrgId(certificateRequest.getSubject().getOrganization().getId());
+            byte[] orgKeyBytes = masterKeyManager.decryptWithRoot(key.getEncryptedKey());
+            SecretKey decryptedOrgKey = CryptoUtils.bytesToSecretKey(orgKeyBytes);
             encryptedPrivateKey = CryptoUtils.encryptAES(certificateSubject.getPrivateKey().getEncoded(), decryptedOrgKey);
             if(validCertificateCreation(certificateRequest,issuerCert))
                 saveCertificateToDb(certificateRequest,certificateSubject,certificateIssuer,encryptedPrivateKey);
         }
         return null;
     }
+
+
     private Certificate saveCertificateToDb(
             CertificateRequest request,
             CertificateSubject subject,
@@ -175,8 +179,11 @@ public class CertificateService implements ICertificateService {
                         orgId=organization.getId();
                     }
                     alias=subject.getSerialNumber();
-                    keystoreManager.writeForOrganization(orgId,alias,subject.getPrivateKey(), x509Certificate);
 
+                    // Pravimo chain pre upisa
+                    X509Certificate[] chain = buildCertificateChainForKeystore(x509Certificate,issuerCert);
+
+                    keystoreManager.writeForOrganization(orgId, alias, subject.getPrivateKey(), chain);
                 }
 
                 Certificate certificate = new Certificate(
@@ -224,14 +231,9 @@ public class CertificateService implements ICertificateService {
         CertificateIssuer issuer = new CertificateIssuer();
         byte[] decryptedBytes ;
         PrivateKey privateKey;
-        if(issuerCert.getCertificateType()==CertificateType.ROOT){
-            decryptedBytes = CryptoUtils.decryptAES(issuerCert.getEncryptedPrivateKey(),masterKeyManager.getRootKey());
-            privateKey = CryptoUtils.bytesToPrivateKey(decryptedBytes);
-        }
-        else{
-            decryptedBytes = CryptoUtils.decryptAES(issuerCert.getEncryptedPrivateKey(),orgDecryptedKey);
-            privateKey = CryptoUtils.bytesToPrivateKey(decryptedBytes);
-        }
+        decryptedBytes = CryptoUtils.decryptAES(issuerCert.getEncryptedPrivateKey(),orgDecryptedKey);
+        privateKey = CryptoUtils.bytesToPrivateKey(decryptedBytes);
+
 
         // Uzme se javni ključ iz sertifikata (čuvati u bazi )
         PublicKey publicKey = CryptoUtils.bytesToPublicKey(issuerCert.getPublicKey());
@@ -375,5 +377,50 @@ public class CertificateService implements ICertificateService {
 
     private CertificateDTO mapToDTO(Certificate certificate) {
         return new CertificateDTO(certificate);
+    }// build chain for keystore
+    private X509Certificate[] buildCertificateChainForKeystore(X509Certificate newCert, Certificate issuerCert) throws Exception {
+        List<X509Certificate> chain = new ArrayList<>();
+
+        // Dodajemo novi sertifikat na početak
+        chain.add(newCert);
+
+        // Dodajemo sve issuer sertifikate do root-a
+        Certificate current = issuerCert;
+        while (current != null) {
+            X509Certificate x509 = createX509FromDbCertificate(current);
+            chain.add(x509);
+
+            if (current.getIssuerSerialNumber() != null) {
+                current = certificateRepository.findBySerialNumber(current.getIssuerSerialNumber())
+                        .orElseThrow(() -> new RuntimeException("Issuer not found for serial: " ));
+            } else {
+                current = null; // root reached
+            }
+        }
+
+        return chain.toArray(new X509Certificate[0]);
     }
+
+    // metoda koja rekonstruiše X509Certificate iz baze
+    private X509Certificate createX509FromDbCertificate(Certificate certificate) throws Exception {
+        PrivateKey privateKey;
+        if (certificate.getCertificateType() == CertificateType.ROOT) {
+            privateKey = CryptoUtils.bytesToPrivateKey(masterKeyManager.decryptWithRoot(certificate.getEncryptedPrivateKey()));
+        } else {
+            OrgKey key = orgKeyRepository.findByOrgId(certificate.getOrganization().getId());
+            SecretKey orgKey = CryptoUtils.bytesToSecretKey(masterKeyManager.decryptWithRoot(key.getEncryptedKey()));
+            privateKey = CryptoUtils.bytesToPrivateKey(CryptoUtils.decryptAES(certificate.getEncryptedPrivateKey(), orgKey));
+        }
+
+        PublicKey publicKey = CryptoUtils.bytesToPublicKey(certificate.getPublicKey());
+        X500Name x500Name = buildX500Name(certificate.getOwner());
+
+        return createCertificateContent(
+                new CertificateSubject(publicKey, privateKey, x500Name, certificate.getSerialNumber(),
+                        certificate.getValidFrom(), certificate.getValidTo()),
+                new CertificateIssuer(x500Name, privateKey, publicKey),
+                certificate.getCertificateType()
+        );
+    }
+
 }

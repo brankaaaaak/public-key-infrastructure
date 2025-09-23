@@ -37,7 +37,7 @@ public class CertificateController {
         return ResponseEntity.ok(created);
     }
     @GetMapping("/organization/intermediate")
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CA')")
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CA') or hasRole('ROLE_USER')")
     public ResponseEntity<List<CertificateDTO>> getValidIntermediateCertificates() {
         try{
             return ResponseEntity.ok(certificateService.getValidIntermediateCertificatesByOrganization());
