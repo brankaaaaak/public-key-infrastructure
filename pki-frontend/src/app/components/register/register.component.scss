@@ -44,6 +44,18 @@
       cursor: not-allowed;
     }
   }
+  select {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+    background-color: white;
+    color: #333;
+    appearance: none; 
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    margin-bottom: 20px;
+  }
 }
 .popup {
   background-color: #d1c4e9; 

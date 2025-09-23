@@ -2,15 +2,16 @@ import { Component } from '@angular/core';
 import { FormGroup, Validators, FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import zxcvbn from 'zxcvbn';
 import { passwordStrengthValidator } from '../../helpers/password-strength.validator';
-import { NgIf } from '@angular/common';
+import { CommonModule, NgIf } from '@angular/common';
 import { UserService } from '../../services/user.service';
 import { Router } from '@angular/router';
 import { passwordMatchValidator } from '../../helpers/password-match.validator';
+import { OrganizationService } from '../../services/organization.service';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [ReactiveFormsModule, NgIf],
+  imports: [ReactiveFormsModule, NgIf, CommonModule],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss'
 })
@@ -19,8 +20,13 @@ export class RegisterComponent {
   passwordStrength = 0;
   showSuccessPopup = false;
   notification?: { msgBody: string };
+  organizations: string[] = [];
 
-  constructor(private fb: FormBuilder, private userService: UserService, private router: Router) {
+  constructor(private fb: FormBuilder,
+              private userService: UserService,
+              private router: Router,
+              private organizationService: OrganizationService,) {
+
     this.form = this.fb.group({
       name: ['', Validators.required],
       lastName: ['', Validators.required],
@@ -29,6 +35,16 @@ export class RegisterComponent {
       password: ['', [Validators.required, passwordStrengthValidator()]],
       repeatPassword: ['', Validators.required],
     }, { validators: passwordMatchValidator() });
+
+    this.loadOrganizations();
+  }
+  loadOrganizations(): void {
+    this.organizationService.getOrganizationNames().subscribe({
+      next: (orgs) => this.organizations = orgs,
+      error: (err) => {
+        console.error('Error: ', err);
+      }
+    });
   }
 
   onPasswordInput(): void {

@@ -27,8 +27,9 @@ public class User implements UserDetails {
     private String lastName;
     @Column(name = "email", nullable = false, unique = true)
     private String email;
-    @Column(nullable = false)
-    private String organization;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organization_id", nullable = true)
+    private Organization organization;
     @Column(name = "enabled", nullable = false)
     private boolean enabled;
     @JsonIgnore
@@ -55,7 +56,6 @@ public class User implements UserDetails {
     public User(RegisterDTO dto){
         this.name = dto.getName();
         this.lastName = dto.getLastName();
-        this.organization = dto.getOrganization();
         this.email = dto.getEmail();
     }
 }

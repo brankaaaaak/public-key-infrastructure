@@ -1,5 +1,7 @@
 package com.example.publicKeyInfrastructure.model;
 
+import com.example.publicKeyInfrastructure.dto.CertificateRequestDTO;
+import com.example.publicKeyInfrastructure.dto.CreateCertificateRequestDTO;
 import com.example.publicKeyInfrastructure.enumeration.CertificateType;
 import com.example.publicKeyInfrastructure.enumeration.RequestType;
 import jakarta.persistence.*;
@@ -37,4 +39,18 @@ public class CertificateRequest {
 
     @Column(name = "refusal_reason")
     private String refusalReason;
+
+    @Column(name = "duration_in_days", nullable = false)
+    private int durationInDays;
+
+
+    public CertificateRequest(CreateCertificateRequestDTO dto){
+        this.certificateType = dto.getCertificateType() != null
+                ? CertificateType.valueOf(dto.getCertificateType())
+                : null;
+        this.durationInDays = dto.getDurationInDays();
+        this.requestType = RequestType.PENDING;
+        this.createdAt = LocalDateTime.now();
+    }
+
 }

@@ -1,28 +1,38 @@
-import { CommonModule } from '@angular/common';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
-
+import { CertificateService } from '../../services/certificate.service';
+import { CommonModule} from '@angular/common';
+import { FormsModule } from '@angular/forms';
 @Component({
   selector: 'app-create-root-certificate',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, HttpClientModule],
+  imports: [CommonModule,FormsModule],
   templateUrl: './create-root-certificate.component.html',
   styleUrl: './create-root-certificate.component.scss'
 })
 export class CreateRootCertificateComponent {
-  form: FormGroup;
+  successMessage = '';
+  errorMessage = '';
+  durationInDays:number=0;
 
-  constructor(private fb: FormBuilder, private http: HttpClient, private router: Router) {
-    this.form = this.fb.group({
-      commonName: ['', Validators.required],
-      organization: ['', Validators.required],
-      validFrom: ['', Validators.required],
-      validTo: ['', Validators.required]
+  constructor(private certificateService: CertificateService) {}
+  
+  createRootCertificate(): void {
+    const request = {
+      certificateType: 'ROOT',
+      issuer: null,
+      durationInDays:this.durationInDays
+    };
+
+    this.certificateService.createCertificateRequest(request).subscribe({
+      next: (response) => {
+        this.successMessage = 'Root certificate created successfully!';
+        this.errorMessage = '';
+      },
+      error: (error) => {
+        this.errorMessage = 'An error occurred: ' + error.error?.message || error.message;
+        this.successMessage = '';
+      }
     });
   }
-  onSubmit() {
-    if (this.form.invalid) return;
-  }
 }
+

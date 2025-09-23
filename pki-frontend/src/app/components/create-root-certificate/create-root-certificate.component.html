@@ -1,8 +1,29 @@
-<div class="form-container">
+<div class="create-root-container">
   <h2>Create Root Certificate</h2>
+  <p>This action will create a new Root Certificate.</p>
 
-  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+  <div class="form-group">
+    <label for="duration">Duration (in days):</label>
+    <input
+      id="duration"
+      type="number"
+      class="form-control"
+      [(ngModel)]="durationInDays"
+      placeholder="Enter number of days"
+      min="1"
+      required
+    />
+  </div>
 
-    <button type="submit" [disabled]="form.invalid">Generate Root Certificate</button>
-  </form>
+  <button class="btn btn-primary" (click)="createRootCertificate()">
+    Create Root Certificate
+  </button>
+
+  <div *ngIf="successMessage" class="success-message">
+    {{ successMessage }}
+  </div>
+
+  <div *ngIf="errorMessage" class="error-message">
+    {{ errorMessage }}
+  </div>
 </div>

@@ -1,11 +1,13 @@
 package com.example.publicKeyInfrastructure.model;
 
 import com.example.publicKeyInfrastructure.enumeration.CertificateType;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Type;
 
 import java.util.Date;
 
@@ -48,5 +50,33 @@ public class Certificate {
 
     @Column(name = "revocation_reason")
     private String revocationReason;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organization_id", nullable = true)
+    private Organization organization;
+
+    @Column(name="encrypted_private_key",nullable = false,columnDefinition = "bytea")
+    private byte[] encryptedPrivateKey;
+
+    @Column(name="public_key", nullable = false,columnDefinition = "bytea")
+    private byte[] publicKey;
+
+    public boolean isValid() {
+        Date now = new Date();
+        return !now.before(validFrom) && now.before(validTo);
+    }
+    public Certificate(CertificateType certificateType,User owner,String serialNumber,String issuerSerialNumber,Date validFrom,Date validTo,boolean revoked,String revocationReason,Organization organization,byte[] encryptedPrivateKey,byte[] publicKey){
+        this.certificateType=certificateType;
+        this.owner=owner;
+        this.serialNumber=serialNumber;
+        this.issuerSerialNumber=issuerSerialNumber;
+        this.validFrom=validFrom;
+        this.validTo=validTo;
+        this.revoked=revoked;
+        this.revocationReason=revocationReason;
+        this.organization=organization;
+        this.encryptedPrivateKey=encryptedPrivateKey;
+        this.publicKey=publicKey;
+    }
 
 }
