@@ -54,3 +54,6 @@ replay_pid*
 
 #localhost.p12 fot https
 pki-backend/src/main/resources/localhost.p12
+
+#keystore
+pki-backend/keystores/
