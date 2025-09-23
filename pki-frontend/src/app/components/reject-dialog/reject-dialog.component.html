@@ -1,1 +1,11 @@
-<p>reject-dialog works!</p>
+<h1 mat-dialog-title>Reject Request</h1>
+    <div mat-dialog-content [formGroup]="form">
+      <mat-form-field appearance="fill">
+        <mat-label>Reason</mat-label>
+        <textarea matInput formControlName="reason"></textarea>
+      </mat-form-field>
+    </div>
+    <div mat-dialog-actions>
+      <button mat-button (click)="onCancel()">Cancel</button>
+      <button mat-button color="warn" [disabled]="form.invalid" (click)="onSubmit()">Reject</button>
+    </div>

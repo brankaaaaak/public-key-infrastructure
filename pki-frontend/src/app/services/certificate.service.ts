@@ -14,20 +14,10 @@ export class CertificateService {
     return this.http.post<any>(`${environment.apiHost}/api/certificate/request`, dto);
   }
   getOrganizationCertificates(): Observable<any> {
-    const token = localStorage.getItem('jwt');
-              let headers = new HttpHeaders();
-              if (token) {
-                headers = headers.set('Authorization', `Bearer ${token}`);
-              }
-    return this.http.get<any>(`${environment.apiHost}/api/certificate/organization/intermediate`,{headers});
+    return this.http.get<any>(`${environment.apiHost}/api/certificate/organization/intermediate`);
   }
   getRootCertificate(): Observable<any> {
-    const token = localStorage.getItem('jwt');
-              let headers = new HttpHeaders();
-              if (token) {
-                headers = headers.set('Authorization', `Bearer ${token}`);
-              }
-    return this.http.get<any>(`${environment.apiHost}/api/certificate/root`,{headers});
+    return this.http.get<any>(`${environment.apiHost}/api/certificate/root`);
   }
   getPendingRequests(): Observable<any[]> {
     return this.http.get<any[]>(`${environment.apiHost}/api/certificate/admin-requests/pending`);
@@ -38,7 +28,9 @@ export class CertificateService {
   }
 
   rejectRequest(id: number, reason: string): Observable<void> {
-    return this.http.put<void>(`${environment.apiHost}/api/certificate/request/${id}/reject`, { refusalReason: reason });
+    return this.http.put<void>(`${environment.apiHost}/api/certificate/request/${id}/deny`, { reason: reason });
   }
-
+  getPendingRequestsCA(): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiHost}/api/certificate/ca-requests/pending`);
+  }
 }
