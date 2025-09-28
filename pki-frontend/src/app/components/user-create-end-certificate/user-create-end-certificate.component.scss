@@ -101,3 +101,54 @@
     font-weight: bold;
   }
 }
+/* Dodatak na postojeći CSS */
+.key-usage-container,
+.extended-key-usage-container,
+.file-upload-container {
+  margin-bottom: 25px;
+  width: 100%;
+  max-width: 400px;
+  text-align: left;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+
+  .checkbox-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #fafafa;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    input[type="checkbox"] {
+      margin-right: 6px;
+      transform: scale(1.2);
+    }
+
+    &:hover {
+      background-color: #f0e6f7;
+      border-color: #6a1b9a;
+    }
+  }
+}
+
+.file-upload-container input[type="file"] {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  cursor: pointer;
+  background-color: #fff;
+  transition: border-color 0.2s ease;
+
+  &:hover {
+    border-color: #6a1b9a;
+  }
+}
+

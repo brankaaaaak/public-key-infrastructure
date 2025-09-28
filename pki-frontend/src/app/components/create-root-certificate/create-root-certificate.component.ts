@@ -20,7 +20,10 @@ export class CreateRootCertificateComponent {
     const request = {
       certificateType: 'ROOT',
       issuer: null,
-      durationInDays:this.durationInDays
+      durationInDays:this.durationInDays,
+      keyUsages: null,
+      extendedKeyUsages: null,
+      csrPem: null
     };
 
     this.certificateService.createCertificateRequest(request).subscribe({

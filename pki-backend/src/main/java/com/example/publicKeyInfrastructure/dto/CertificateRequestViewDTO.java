@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -30,6 +31,8 @@ public class CertificateRequestViewDTO {
     private String subjectEmail;
     private String refusalReason;
     private int durationInDays;
+    private List<String> keyUsages;
+    private List<String> extendedKeyUsages;
     public CertificateRequestViewDTO(CertificateRequest cr){
         this.id=cr.getId();
         this.createdAt=cr.getCreatedAt();
@@ -42,5 +45,7 @@ public class CertificateRequestViewDTO {
         this.subjectEmail=cr.getSubject().getEmail();
         this.refusalReason=cr.getRefusalReason();
         this.durationInDays=cr.getDurationInDays();
+        this.keyUsages=cr.getKeyUsages();
+        this.extendedKeyUsages=cr.getExtendedKeyUsages();
     }
 }

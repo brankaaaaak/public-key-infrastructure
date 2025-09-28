@@ -19,7 +19,8 @@ import { RejectDialogComponent } from '../reject-dialog/reject-dialog.component'
 export class CaManageRequestsComponent {
 requests: any[] = [];
   displayedColumns: string[] = [
-    'id', 'createdAt','durationInDays', 'certificateType', 'subject', 'issuer','issuerType','issuerFrom','issuerTo', 'actions'
+    'id', 'createdAt','durationInDays', 'certificateType', 'subject', 'issuer','issuerType','issuerFrom','issuerTo', 'keyUsages',
+    'extendedKeyUsages','actions'
   ];
 
   constructor(private service: CertificateService,

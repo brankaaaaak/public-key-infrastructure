@@ -71,6 +71,20 @@ public class KeystoreManager {
         String keyStoreFile = getOrgKeyStoreFile(orgId);
         write(keyStoreFile, alias, privateKey, chain);
     }
+    public CertificateIssuer readOrgIssuer(Long orgId, String alias) {
+        String keyStoreFile = getOrgKeyStoreFile(orgId);
+        return readIssuer(keyStoreFile, alias);
+    }
+
+    public X509Certificate readOrgCertificate(Long orgId, String alias) {
+        String keyStoreFile = getOrgKeyStoreFile(orgId);
+        return (X509Certificate) readCertificate(keyStoreFile, alias);
+    }
+
+    public PrivateKey readOrgPrivateKey(Long orgId, String alias) {
+        String keyStoreFile = getOrgKeyStoreFile(orgId);
+        return readPrivateKey(keyStoreFile, alias);
+    }
 
     /** =================== WRITER ZA ROOT =================== */
     public void writeRoot(String alias, PrivateKey privateKey, X509Certificate certificate) {
@@ -78,6 +92,20 @@ public class KeystoreManager {
         write(keyStoreFile, alias, privateKey, new X509Certificate[]{certificate});
     }
 
+    public CertificateIssuer readRootIssuer(String alias) {
+        String keyStoreFile = getRootKeyStoreFile();
+        return readIssuer(keyStoreFile, alias);
+    }
+
+    public X509Certificate readRootCertificate(String alias) {
+        String keyStoreFile = getRootKeyStoreFile();
+        return (X509Certificate) readCertificate(keyStoreFile, alias);
+    }
+
+    public PrivateKey readRootPrivateKey(String alias) {
+        String keyStoreFile = getRootKeyStoreFile();
+        return readPrivateKey(keyStoreFile, alias);
+    }
 
 
     /** =================== READER =================== */
@@ -108,6 +136,7 @@ public class KeystoreManager {
         try {
             keyStore.load(new FileInputStream(keyStoreFile), getPassword());
             Certificate cert = keyStore.getCertificate(alias);
+            //keyStore.getCertificateChain(alias)
             if (cert == null) throw new RuntimeException("Certificate not found for alias: " + alias);
             return cert;
         } catch (Exception e) {
