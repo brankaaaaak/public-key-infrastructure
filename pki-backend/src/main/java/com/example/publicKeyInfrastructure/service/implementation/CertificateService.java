@@ -282,7 +282,10 @@ public class CertificateService implements ICertificateService {
                 subjectName,
                 serialNumber,
                 startDate,
-                endDate
+                endDate,
+                certificateRequest.getKeyUsages(),
+                certificateRequest.getExtendedKeyUsages(),
+                certificateRequest.getCsrPem()
         );
     }
     private KeyPair generateKeyPair(){
@@ -334,10 +337,17 @@ public class CertificateService implements ICertificateService {
                 break;
             case END:
                 certBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(false));
-                certBuilder.addExtension(Extension.keyUsage, true, new KeyUsage(KeyUsage.digitalSignature | KeyUsage.keyEncipherment));
-                certBuilder.addExtension(Extension.extendedKeyUsage, false,
-                        new ExtendedKeyUsage(new KeyPurposeId[]{KeyPurposeId.id_kp_clientAuth, KeyPurposeId.id_kp_serverAuth}));
+                if (subject.getKeyUsages() != null) {
+                    int keyUsageBits = buildKeyUsageBits(subject.getKeyUsages());
+                    certBuilder.addExtension(Extension.keyUsage, true, new KeyUsage(keyUsageBits));
+                }
+                if (subject.getExtendedKeyUsages() != null) {
+                    List<KeyPurposeId> ekuList = buildExtendedKeyUsages(subject.getExtendedKeyUsages());
+                    certBuilder.addExtension(Extension.extendedKeyUsage, false,
+                            new ExtendedKeyUsage(ekuList.toArray(new KeyPurposeId[0])));
+                }
                 break;
+
             default:
                 throw new IllegalArgumentException("Unknown cert type");
         }
@@ -387,9 +397,14 @@ public class CertificateService implements ICertificateService {
         // Dodajemo sve issuer sertifikate do root-a
         Certificate current = issuerCert;
         while (current != null) {
-            X509Certificate x509 = createX509FromDbCertificate(current);
-            chain.add(x509);
-
+            if(current.getCertificateType()!=CertificateType.ROOT) {
+                X509Certificate x509 = keystoreManager.readOrgCertificate(current.getOrganization().getId(), current.getSerialNumber());
+                chain.add(x509);
+            }
+            else{
+                X509Certificate x509 = keystoreManager.readRootCertificate(current.getSerialNumber());
+                chain.add(x509);
+            }
             if (current.getIssuerSerialNumber() != null) {
                 current = certificateRepository.findBySerialNumber(current.getIssuerSerialNumber())
                         .orElseThrow(() -> new RuntimeException("Issuer not found for serial: " ));
@@ -401,26 +416,40 @@ public class CertificateService implements ICertificateService {
         return chain.toArray(new X509Certificate[0]);
     }
 
-    // metoda koja rekonstruiše X509Certificate iz baze
-    private X509Certificate createX509FromDbCertificate(Certificate certificate) throws Exception {
-        PrivateKey privateKey;
-        if (certificate.getCertificateType() == CertificateType.ROOT) {
-            privateKey = CryptoUtils.bytesToPrivateKey(masterKeyManager.decryptWithRoot(certificate.getEncryptedPrivateKey()));
-        } else {
-            OrgKey key = orgKeyRepository.findByOrgId(certificate.getOrganization().getId());
-            SecretKey orgKey = CryptoUtils.bytesToSecretKey(masterKeyManager.decryptWithRoot(key.getEncryptedKey()));
-            privateKey = CryptoUtils.bytesToPrivateKey(CryptoUtils.decryptAES(certificate.getEncryptedPrivateKey(), orgKey));
+
+    private int buildKeyUsageBits(List<String> keyUsages) {
+        int bits = 0;
+        for (String usage : keyUsages) {
+            switch (usage.toUpperCase()) {
+                case "DIGITAL SIGNATURE": bits |= KeyUsage.digitalSignature; break;
+                case "NON REPUDIATION": bits |= KeyUsage.nonRepudiation; break;
+                case "KEY ENCIPHERMENT": bits |= KeyUsage.keyEncipherment; break;
+                case "DATA ENCIPHERMENT": bits |= KeyUsage.dataEncipherment; break;
+                case "KEY AGREEMENT": bits |= KeyUsage.keyAgreement; break;
+                case "CERTIFICATE SIGN": bits |= KeyUsage.keyCertSign; break;
+                case "CRL SIGN": bits |= KeyUsage.cRLSign; break;
+                case "ENCIPHER ONLY": bits |= KeyUsage.encipherOnly; break;
+                case "DECIPHER ONLY": bits |= KeyUsage.decipherOnly; break;
+            }
         }
-
-        PublicKey publicKey = CryptoUtils.bytesToPublicKey(certificate.getPublicKey());
-        X500Name x500Name = buildX500Name(certificate.getOwner());
-
-        return createCertificateContent(
-                new CertificateSubject(publicKey, privateKey, x500Name, certificate.getSerialNumber(),
-                        certificate.getValidFrom(), certificate.getValidTo()),
-                new CertificateIssuer(x500Name, privateKey, publicKey),
-                certificate.getCertificateType()
-        );
+        return bits;
     }
+
+    private List<KeyPurposeId> buildExtendedKeyUsages(List<String> extendedKeyUsages) {
+        List<KeyPurposeId> ekuList = new ArrayList<>();
+        for (String eku : extendedKeyUsages) {
+            switch (eku.toUpperCase()) {
+                case "SERVER AUTHENTICATION": ekuList.add(KeyPurposeId.id_kp_serverAuth); break;
+                case "CLIENT AUTHENTICATION": ekuList.add(KeyPurposeId.id_kp_clientAuth); break;
+                case "CODE SIGNING": ekuList.add(KeyPurposeId.id_kp_codeSigning); break;
+                case "EMAIL PROTECTION": ekuList.add(KeyPurposeId.id_kp_emailProtection); break;
+                case "TIME STAMPING": ekuList.add(KeyPurposeId.id_kp_timeStamping); break;
+                case "OCSP SIGNING": ekuList.add(KeyPurposeId.id_kp_OCSPSigning); break;
+                default: throw new IllegalArgumentException("Unknown EKU: " + eku);
+            }
+        }
+        return ekuList;
+    }
+
 
 }

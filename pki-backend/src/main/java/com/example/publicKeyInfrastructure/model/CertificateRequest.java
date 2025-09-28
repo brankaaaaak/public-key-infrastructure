@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Getter
@@ -43,6 +44,15 @@ public class CertificateRequest {
     @Column(name = "duration_in_days", nullable = false)
     private int durationInDays;
 
+    @Column(name="key_usages",nullable=true)
+    private List<String> keyUsages;
+
+    @Column(name="extended_key_usages",nullable = true)
+    private List<String> extendedKeyUsages;
+
+    @Column(name="csr_pem_file",nullable=true)
+    private String csrPem;
+
 
     public CertificateRequest(CreateCertificateRequestDTO dto){
         this.certificateType = dto.getCertificateType() != null
@@ -51,6 +61,9 @@ public class CertificateRequest {
         this.durationInDays = dto.getDurationInDays();
         this.requestType = RequestType.PENDING;
         this.createdAt = LocalDateTime.now();
+        this.keyUsages=dto.getKeyUsages();
+        this.extendedKeyUsages=dto.getExtendedKeyUsages();
+        this.csrPem=dto.getCsrPem();
     }
 
 }
