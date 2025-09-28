@@ -28,6 +28,7 @@ import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.bouncycastle.pkcs.PKCS10CertificationRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cglib.core.Local;
 import org.springframework.data.crossstore.ChangeSetPersister;
@@ -82,7 +83,7 @@ public class CertificateService implements ICertificateService {
             if(validCertificateCreation(certificateRequest,issuerCert))
                 saveCertificateToDb(certificateRequest,certificateSubject,certificateIssuer,encryptedPrivateKey);
         }else{
-            //to do i or ee
+
             // Uzima se issuer sertifikat iz baze
             issuerCert= certificateRepository.findById(certificateRequest.getIssuer().getId())
                     .orElseThrow(() -> new RuntimeException("Issuer certificate not found"));
@@ -127,6 +128,13 @@ public class CertificateService implements ICertificateService {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
+            // Novi deo: End Entity CSR scenario
+            if(certificateRequest.getCertificateType() == CertificateType.END &&
+                    certificateRequest.getCsrPem() != null && !certificateRequest.getCsrPem().isEmpty()) {
+
+                // poziv helper metode koja parsira CSR i kreira sertifikat
+                return createEndEntityFromCsr(certificateRequest, certificateIssuer);
+            }
             // Šifrujemo privatni ključ novog sertifikata sa org key
             OrgKey key = orgKeyRepository.findByOrgId(certificateRequest.getSubject().getOrganization().getId());
             byte[] orgKeyBytes = masterKeyManager.decryptWithRoot(key.getEncryptedKey());
@@ -138,6 +146,33 @@ public class CertificateService implements ICertificateService {
         return null;
     }
 
+    private CertificateDTO createEndEntityFromCsr(CertificateRequest certificateRequest, CertificateIssuer certificateIssuer) {
+        try {
+            // 1. Parsiraj CSR iz PEM stringa
+            PKCS10CertificationRequest csr = CryptoUtils.parseCsrFromPem(certificateRequest.getCsrPem());
+
+            // 2. Uzimamo javni ključ iz CSR-a
+            PublicKey subjectPublicKey = CryptoUtils.getPublicKeyFromCsr(csr);
+
+            // 3. Kreiramo CertificateSubject (privatni ključ ostaje kod korisnika)
+            CertificateSubject subject = createCertificateSubjectFromCsr(certificateRequest,csr);
+
+            // 4. Potpiši sertifikat sa issuer-om i dodaj ekstenzije
+            X509Certificate signedCert = createCertificateContent(
+                    subject,
+                    certificateIssuer,
+                    certificateRequest.getCertificateType()
+            );
+            // 5. Sačuvaj sertifikat u bazi (bez privatnog ključa)
+            saveCertificateToDb(certificateRequest, subject, certificateIssuer, null);
+
+            // 6. Vrati DTO sa potpisanim sertifikatom
+            return null;
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create End Entity certificate from CSR", e);
+        }
+    }
 
     private Certificate saveCertificateToDb(
             CertificateRequest request,
@@ -182,8 +217,10 @@ public class CertificateService implements ICertificateService {
 
                     // Pravimo chain pre upisa
                     X509Certificate[] chain = buildCertificateChainForKeystore(x509Certificate,issuerCert);
-
-                    keystoreManager.writeForOrganization(orgId, alias, subject.getPrivateKey(), chain);
+                    if(subject.getPrivateKey()!=null)
+                        keystoreManager.writeForOrganization(orgId, alias, subject.getPrivateKey(), chain);
+                    else
+                        keystoreManager.writeCertificateForOrganization(orgId,alias,x509Certificate);
                 }
 
                 Certificate certificate = new Certificate(
@@ -288,6 +325,46 @@ public class CertificateService implements ICertificateService {
                 certificateRequest.getCsrPem()
         );
     }
+    private CertificateSubject createCertificateSubjectFromCsr(CertificateRequest certificateRequest, PKCS10CertificationRequest csr) throws ChangeSetPersister.NotFoundException {
+        // Dobavi javni ključ iz CSR-a
+        PublicKey publicKey;
+        try {
+            publicKey = CryptoUtils.getPublicKeyFromCsr(csr);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to extract public key from CSR", e);
+        }
+        User loggedUser = getLoggedUser(); // ili iz SecurityContext-a
+        //X500Name originalName = CryptoUtils.getSubjectFromCsr(csr);
+
+        // X500Name iz CSR-a
+        X500Name subjectName = buildX500Name(getLoggedUser());
+
+        // Start i end date
+        Date startDate = new Date();
+        LocalDateTime endDateTime = startDate.toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime()
+                .plusDays(certificateRequest.getDurationInDays());
+        Date endDate = Date.from(endDateTime.atZone(ZoneId.systemDefault()).toInstant());
+
+        // Serial number
+        SecureRandom random = new SecureRandom();
+        BigInteger serial = new BigInteger(64, random).abs();
+        String serialNumber = serial.toString();
+
+        return new CertificateSubject(
+                publicKey,
+                null, // nema privatnog ključa
+                subjectName,
+                serialNumber,
+                startDate,
+                endDate,
+                certificateRequest.getKeyUsages(),
+                certificateRequest.getExtendedKeyUsages(),
+                certificateRequest.getCsrPem()
+        );
+    }
+
     private KeyPair generateKeyPair(){
         try {
 

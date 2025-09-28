@@ -50,7 +50,7 @@ public class CertificateRequest {
     @Column(name="extended_key_usages",nullable = true)
     private List<String> extendedKeyUsages;
 
-    @Column(name="csr_pem_file",nullable=true)
+    @Column(name="csr_pem_file",nullable=true,columnDefinition = "TEXT")
     private String csrPem;
 
 

@@ -71,6 +71,23 @@ public class KeystoreManager {
         String keyStoreFile = getOrgKeyStoreFile(orgId);
         write(keyStoreFile, alias, privateKey, chain);
     }
+    private void writeCertificateOnly(String keyStoreFile, String alias, X509Certificate certificate) {
+        try {
+            keyStore.load(keyStoreFile != null && new File(keyStoreFile).exists() ?
+                    new FileInputStream(keyStoreFile) : null, getPassword());
+
+            keyStore.setCertificateEntry(alias, certificate); // samo sertifikat
+            keyStore.store(new FileOutputStream(keyStoreFile), getPassword());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to write certificate to KeyStore", e);
+        }
+    }
+
+    public void writeCertificateForOrganization(Long orgId, String alias, X509Certificate certificate) {
+        String keyStoreFile = getOrgKeyStoreFile(orgId);
+        writeCertificateOnly(keyStoreFile, alias, certificate);
+    }
+
     public CertificateIssuer readOrgIssuer(Long orgId, String alias) {
         String keyStoreFile = getOrgKeyStoreFile(orgId);
         return readIssuer(keyStoreFile, alias);
