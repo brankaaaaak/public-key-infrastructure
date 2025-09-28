@@ -159,7 +159,7 @@ public class CertificateService implements ICertificateService {
                     owner = request.getSubject();
                     organization = null;
                     // Upis u root keystore
-                    keystoreManager.writeRoot("root", subject.getPrivateKey(), x509Certificate);
+                    keystoreManager.writeRoot(subject.getSerialNumber(), subject.getPrivateKey(), x509Certificate);
 
                 } else {
                     // Intermediate / End-Entity -> issuer info

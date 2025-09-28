@@ -44,7 +44,10 @@ export class CaCreateEndCertificateComponent {
     const request = {
       certificateType: 'END',
       issuer: this.selectedIssuerSerialNumber,
-      durationInDays:this.durationInDays
+      durationInDays:this.durationInDays,
+      keyUsages: null,
+      extendedKeyUsages: null,
+      csrPem: null
     };
 
     this.certificateService.createCertificateRequest(request).subscribe({
