@@ -94,8 +94,12 @@ public class CertificateController {
         return ResponseEntity.ok(dto);
     }
     @GetMapping("/requests/mine-ee")
-    public ResponseEntity<List<CertificateRequestViewDTO>> getMineEndEntityCertificates() throws ChangeSetPersister.NotFoundException {
-        return ResponseEntity.ok(requestService.getMineEECertificates());
+    public ResponseEntity<List<CertificateRequestViewDTO>> getMineEndEntityCertificatesRequessts() throws ChangeSetPersister.NotFoundException {
+        return ResponseEntity.ok(requestService.getMineEECertificatesRequests());
+    }
+    @GetMapping("/mine-ee")
+    public ResponseEntity<List<CertificateDTO>> getMineEndEntityCertificates() throws ChangeSetPersister.NotFoundException {
+        return ResponseEntity.ok(certificateService.getMineEECertificates());
     }
     @GetMapping("/{id}/download")
     public ResponseEntity<byte[]> downloadCertificate(@PathVariable Long id) throws Exception {
