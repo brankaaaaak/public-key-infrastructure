@@ -22,5 +22,20 @@ export class UserDownloadComponent {
   }
 
   downloadCertificate(requestId: number): void {
+    this.service.downloadCertificate(requestId).subscribe({
+      next: (blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `certificate-${requestId}.p12`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err) => {
+        console.error('Failed to download certificate', err);
+        alert('Download failed.');
+      }
+    });
   }
+
 }

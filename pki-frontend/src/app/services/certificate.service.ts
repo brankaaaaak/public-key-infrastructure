@@ -36,4 +36,10 @@ export class CertificateService {
   getMineEndEntityCertificates(): Observable<any[]> {
     return this.http.get<any[]>(`${environment.apiHost}/api/certificate/requests/mine-ee`);
   }
+  downloadCertificate(requestId: number): Observable<Blob> {
+    const url = `${environment.apiHost}/api/certificate/${requestId}/download`;
+    return this.http.get(url, {
+      responseType: 'blob' 
+    });
+  }
 }
