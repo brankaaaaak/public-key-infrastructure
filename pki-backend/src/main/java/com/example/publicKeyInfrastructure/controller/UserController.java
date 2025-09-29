@@ -2,9 +2,11 @@ package com.example.publicKeyInfrastructure.controller;
 
 import com.example.publicKeyInfrastructure.dto.*;
 import com.example.publicKeyInfrastructure.model.User;
+import com.example.publicKeyInfrastructure.model.UserWithRoleDTO;
 import com.example.publicKeyInfrastructure.model.VerificationToken;
 import com.example.publicKeyInfrastructure.repository.IUserRepository;
 import com.example.publicKeyInfrastructure.repository.IVerificationTokenRepository;
+import com.example.publicKeyInfrastructure.service.implementation.UserService;
 import com.example.publicKeyInfrastructure.service.interfaces.IUserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -71,6 +74,21 @@ public class UserController {
     public ResponseEntity<?> refreshToken(@Valid @RequestBody RefreshTokenDTO request) {
         TokenPair tokenPair = service.refreshToken(request);
         return ResponseEntity.ok(tokenPair);
+    }
+    @GetMapping("/all")
+    public List<UserWithRoleDTO> getAllUsers() {
+        System.out.println(service.getAllUsers());
+        return service.getAllUsers();
+    }
+
+    @GetMapping("/{id}")
+    public UserDTO getUserById(@PathVariable Long id) {
+        return service.getUserById(id);
+    }
+    @PutMapping("/{id}/upgrade")
+    public ResponseEntity<UserDTO> upgradeUserToCA(@PathVariable Long id) {
+        UserDTO upgraded = ((UserService) service).upgradeToCA(id);
+        return ResponseEntity.ok(upgraded);
     }
 
 }

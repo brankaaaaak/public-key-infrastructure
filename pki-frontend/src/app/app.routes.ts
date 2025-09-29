@@ -13,14 +13,15 @@ import { UserHomeComponent } from './components/user-home/user-home.component';
 import { AdminManageRequestsComponent } from './components/admin-manage-requests/admin-manage-requests.component';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { CaManageRequestsComponent } from './components/ca-manage-requests/ca-manage-requests.component';
+import {ViewUsersComponent} from './components/view-users/view-users.component';
 
 export const routes: Routes = [
     { path: '', component: WelcomePageComponent },
     { path: 'login', component: LoginComponent },
-    { 
-    path: 'register', 
+    {
+    path: 'register',
     component: RegisterComponent,
-    providers: [provideHttpClient(),provideAnimations()]  
+    providers: [provideHttpClient(),provideAnimations()]
     },
     { path: 'admin-home', component: AdminHomeComponent },
     { path: 'admin/create-root', component: CreateRootCertificateComponent },
@@ -30,5 +31,6 @@ export const routes: Routes = [
     { path: 'user-home', component: UserHomeComponent},
     { path: 'user/user-create-end-certificate', component: UserCreateEndCertificateComponent},
     { path: 'admin/requests', component: AdminManageRequestsComponent},
-    { path: 'ca/requests', component: CaManageRequestsComponent}
+    { path: 'ca/requests', component: CaManageRequestsComponent},
+    { path: 'admin/view-users' , component: ViewUsersComponent}
 ];

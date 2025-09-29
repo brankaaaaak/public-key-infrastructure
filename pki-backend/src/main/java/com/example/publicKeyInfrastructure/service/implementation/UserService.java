@@ -1,10 +1,7 @@
 package com.example.publicKeyInfrastructure.service.implementation;
 
 import com.example.publicKeyInfrastructure.dto.*;
-import com.example.publicKeyInfrastructure.model.Organization;
-import com.example.publicKeyInfrastructure.model.Role;
-import com.example.publicKeyInfrastructure.model.User;
-import com.example.publicKeyInfrastructure.model.VerificationToken;
+import com.example.publicKeyInfrastructure.model.*;
 import com.example.publicKeyInfrastructure.repository.IOrganizationRepository;
 import com.example.publicKeyInfrastructure.repository.IRoleRepository;
 import com.example.publicKeyInfrastructure.repository.IUserRepository;
@@ -22,9 +19,11 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -120,6 +119,47 @@ public class UserService implements IUserService{
 
         String accessToken = jwtService.generateAccessToken(authentication);
         return new TokenPair(accessToken, refreshToken);
+    }
+
+    @Override
+    public List<UserWithRoleDTO> getAllUsers() {
+        return userRepository.findAll()
+                .stream()
+                .filter(user -> user.getRoles()
+                        .stream()
+                        .noneMatch(role -> role.getName().equals("ROLE_ADMIN")))
+                .map(UserWithRoleDTO::new)
+                .collect(Collectors.toList());
+    }
+
+
+
+    @Override
+    public UserDTO getUserById(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+        return new UserDTO(user);
+    }
+
+    public UserDTO upgradeToCA(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        boolean isUser = user.getRoles().stream()
+                .anyMatch(r -> r.getName().equals("ROLE_USER"));
+
+        if (!isUser) {
+            throw new RuntimeException("User does not have ROLE_USER");
+        }
+
+        Role caRole = roleRepository.findByName("ROLE_CA")
+                .orElseThrow(() -> new RuntimeException("ROLE_CA not found"));
+
+        user.getRoles().clear();
+        user.getRoles().add(caRole);
+        userRepository.save(user);
+
+        return new UserDTO(user);
     }
 
 }
