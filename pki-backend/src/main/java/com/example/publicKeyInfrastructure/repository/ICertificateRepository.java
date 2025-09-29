@@ -34,4 +34,11 @@ public interface ICertificateRepository extends JpaRepository<Certificate, Long>
             "AND revoked=false " +
             "AND CURRENT_TIMESTAMP BETWEEN c.validFrom AND c.validTo" )
     Optional<Certificate> findValidRootCertificate();
+
+
+
+    @Query("SELECT c FROM Certificate c WHERE c.issuerSerialNumber = :issuerSerialNumber AND c.serialNumber <> :issuerSerialNumber")
+    List<Certificate> findChildrenByIssuerSerialNumber(@Param("issuerSerialNumber") String issuerSerialNumber);
+
+    List<Certificate> findByOwnerId(Long ownerId);
 }

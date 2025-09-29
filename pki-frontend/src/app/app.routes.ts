@@ -14,6 +14,9 @@ import { AdminManageRequestsComponent } from './components/admin-manage-requests
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { CaManageRequestsComponent } from './components/ca-manage-requests/ca-manage-requests.component';
 import {ViewUsersComponent} from './components/view-users/view-users.component';
+import {
+  ViewCertificateChainComponent
+} from './components/ca-view-certificate-chain/ca-view-certificate-chain.component';
 
 export const routes: Routes = [
     { path: '', component: WelcomePageComponent },
@@ -32,5 +35,7 @@ export const routes: Routes = [
     { path: 'user/user-create-end-certificate', component: UserCreateEndCertificateComponent},
     { path: 'admin/requests', component: AdminManageRequestsComponent},
     { path: 'ca/requests', component: CaManageRequestsComponent},
-    { path: 'admin/view-users' , component: ViewUsersComponent}
+    { path: 'admin/view-users' , component: ViewUsersComponent},
+    { path: 'ca/view-certificate-chain', component: ViewCertificateChainComponent }
+
 ];

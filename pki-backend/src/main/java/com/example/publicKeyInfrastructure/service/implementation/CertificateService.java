@@ -6,10 +6,8 @@ import com.example.publicKeyInfrastructure.crypto.MasterKeyManager;
 import com.example.publicKeyInfrastructure.data.CertificateIssuer;
 import com.example.publicKeyInfrastructure.data.CertificateSubject;
 import com.example.publicKeyInfrastructure.dto.CertificateDTO;
-import com.example.publicKeyInfrastructure.dto.CertificateRequestViewDTO;
-import com.example.publicKeyInfrastructure.dto.UserDTO;
+import com.example.publicKeyInfrastructure.dto.CertificateTreeDTO;
 import com.example.publicKeyInfrastructure.enumeration.CertificateType;
-import com.example.publicKeyInfrastructure.enumeration.RequestType;
 import com.example.publicKeyInfrastructure.model.*;
 import com.example.publicKeyInfrastructure.model.Certificate;
 import com.example.publicKeyInfrastructure.repository.ICertificateRepository;
@@ -29,7 +27,6 @@ import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cglib.core.Local;
 import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -37,13 +34,10 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
-import java.io.ByteArrayInputStream;
 import java.math.BigInteger;
 import java.security.*;
 import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
@@ -449,6 +443,51 @@ public class CertificateService implements ICertificateService {
             }
         }
         return ekuList;
+    }
+
+    @Override
+    public CertificateTreeDTO getCertificateChainForLoggedCA() throws Exception {
+        User loggedUser = getLoggedUser();
+
+        // nađi root/intermediate sertifikate koji pripadaju CA korisniku
+        List<Certificate> roots = certificateRepository.findByOwnerId(loggedUser.getId());
+
+        if (roots.isEmpty()) {
+            throw new RuntimeException("No certificates found for this user.");
+        }
+
+        // za svaki sertifikat napravi stablo
+        return buildTree(roots.get(0)); // uzimam prvi – ako može više, vraćaj listu
+    }
+
+    private CertificateTreeDTO buildTree(Certificate cert) {
+        return buildTree(cert, new HashSet<>());
+    }
+
+    private CertificateTreeDTO buildTree(Certificate cert, Set<String> visited) {
+        if (visited.contains(cert.getSerialNumber())) {
+            // već viđen, prekidamo da ne napravimo beskonačnu petlju
+            return null;
+        }
+        visited.add(cert.getSerialNumber());
+
+        CertificateTreeDTO dto = new CertificateTreeDTO(
+                cert.getSerialNumber(),
+                cert.getCertificateType(),
+                cert.getOwner().getEmail(),
+                cert.isRevoked(),
+                new ArrayList<>()
+        );
+
+        List<Certificate> children = certificateRepository.findChildrenByIssuerSerialNumber(cert.getSerialNumber());
+        for (Certificate child : children) {
+            CertificateTreeDTO childDto = buildTree(child, visited);
+            if (childDto != null) {
+                dto.getChildren().add(childDto);
+            }
+        }
+
+        return dto;
     }
 
 

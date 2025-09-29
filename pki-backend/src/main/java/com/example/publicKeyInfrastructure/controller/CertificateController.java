@@ -1,9 +1,6 @@
 package com.example.publicKeyInfrastructure.controller;
 
-import com.example.publicKeyInfrastructure.dto.CertificateDTO;
-import com.example.publicKeyInfrastructure.dto.CertificateRequestDTO;
-import com.example.publicKeyInfrastructure.dto.CertificateRequestViewDTO;
-import com.example.publicKeyInfrastructure.dto.CreateCertificateRequestDTO;
+import com.example.publicKeyInfrastructure.dto.*;
 import com.example.publicKeyInfrastructure.service.interfaces.ICertificateRequestService;
 import com.example.publicKeyInfrastructure.service.interfaces.ICertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -93,4 +90,19 @@ public class CertificateController {
         CertificateRequestViewDTO dto = requestService.denyRequest(id, reason);
         return ResponseEntity.ok(dto);
     }
+
+    @GetMapping("/my-chain")
+    public ResponseEntity<?> getMyCertificateChain() {
+        try {
+            CertificateTreeDTO tree = certificateService.getCertificateChainForLoggedCA();
+            return ResponseEntity.ok(tree);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Internal server error"));
+        }
+    }
+
 }
