@@ -34,7 +34,7 @@ export class CertificateService {
     return this.http.get<any[]>(`${environment.apiHost}/api/certificate/ca-requests/pending`);
   }
   getMineEndEntityCertificates(): Observable<any[]> {
-    return this.http.get<any[]>(`${environment.apiHost}/api/certificate/requests/mine-ee`);
+    return this.http.get<any[]>(`${environment.apiHost}/api/certificate/mine-ee`);
   }
   downloadCertificate(requestId: number): Observable<Blob> {
     const url = `${environment.apiHost}/api/certificate/${requestId}/download`;
