@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -81,10 +82,13 @@ public class UserController {
         return service.getAllUsers();
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @GetMapping("/{id}")
     public UserDTO getUserById(@PathVariable Long id) {
         return service.getUserById(id);
     }
+
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PutMapping("/{id}/upgrade")
     public ResponseEntity<UserDTO> upgradeUserToCA(@PathVariable Long id) {
         UserDTO upgraded = ((UserService) service).upgradeToCA(id);
