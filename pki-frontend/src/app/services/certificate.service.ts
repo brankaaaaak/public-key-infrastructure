@@ -33,4 +33,7 @@ export class CertificateService {
   getPendingRequestsCA(): Observable<any[]> {
     return this.http.get<any[]>(`${environment.apiHost}/api/certificate/ca-requests/pending`);
   }
+  getMineEndEntityCertificates(): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiHost}/api/certificate/requests/mine-ee`);
+  }
 }

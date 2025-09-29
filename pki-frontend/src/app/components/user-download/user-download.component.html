@@ -1,0 +1,42 @@
+<div class="requests-container">
+  <h2>My Certificate Requests</h2>
+
+  <table class="requests-table" *ngIf="requests && requests.length > 0">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Created At</th>
+        <th>Status</th>
+        <th>Issuer Serial</th>
+        <th>Issuer Type</th>
+        <th>Valid From</th>
+        <th>Valid To</th>
+        <th>Cert Type</th>
+        <th>Subject Email</th>
+        <th>Duration</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let req of requests">
+        <td>{{ req.id }}</td>
+        <td>{{ req.createdAt | date:'yyyy-MM-dd HH:mm' }}</td>
+        <td>{{ req.requestType }}</td>
+        <td>{{ req.issuerSerialNumber }}</td>
+        <td>{{ req.issuerType }}</td>
+        <td>{{ req.issuerValidFrom | date:'yyyy-MM-dd' }}</td>
+        <td>{{ req.issuerValidTo | date:'yyyy-MM-dd' }}</td>
+        <td>{{ req.certificateType }}</td>
+        <td>{{ req.subjectEmail }}</td>
+        <td>{{ req.durationInDays }} days</td>
+        <td>
+          <button class="btn-download" (click)="downloadCertificate(req.id)" [disabled]="req.requestType !== 'ACCEPTED'">Download</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div *ngIf="requests.length === 0" class="no-data">
+    No certificate requests found.
+  </div>
+</div>
