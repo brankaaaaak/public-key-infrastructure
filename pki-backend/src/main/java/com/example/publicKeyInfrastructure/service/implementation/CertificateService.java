@@ -413,11 +413,18 @@ public class CertificateService implements ICertificateService {
                 certBuilder.addExtension(Extension.keyUsage, true, new KeyUsage(KeyUsage.keyCertSign | KeyUsage.cRLSign));
                 break;
             case END:
-                certBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(0));
+                certBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(false)); // End entity nema CA prava
+
                 if (subject.getKeyUsages() != null) {
-                    int keyUsageBits = buildKeyUsageBits(subject.getKeyUsages());
+                    // Filtriraju se nedozvoljene KeyUsage bitove za end-entity
+                    List<String> filteredUsages = subject.getKeyUsages().stream()
+                            .filter(ku -> !ku.equalsIgnoreCase("keyCertSign") && !ku.equalsIgnoreCase("cRLSign"))
+                            .toList();
+
+                    int keyUsageBits = buildKeyUsageBits(filteredUsages);
                     certBuilder.addExtension(Extension.keyUsage, true, new KeyUsage(keyUsageBits));
                 }
+
                 if (subject.getExtendedKeyUsages() != null) {
                     List<KeyPurposeId> ekuList = buildExtendedKeyUsages(subject.getExtendedKeyUsages());
                     certBuilder.addExtension(Extension.extendedKeyUsage, false,
@@ -475,9 +482,20 @@ public class CertificateService implements ICertificateService {
 
         return allCertificates;
     }
+    @Override
+    public List<CertificateDTO> getAllValidCertificatesWithoutRoot() {
+        List<CertificateDTO> allCertificates = new ArrayList<>();
+
+        // Validni intermediate
+        List<Certificate> intermediates = certificateRepository.findValidIntermediate();
+        intermediates.forEach(intermediate -> allCertificates.add(mapToDTO(intermediate)));
+
+        return allCertificates;
+    }
     private CertificateDTO mapToDTO(Certificate certificate) {
         return new CertificateDTO(certificate);
-    }// build chain for keystore
+    }
+    // build chain for keystore
     private X509Certificate[] buildCertificateChainForKeystore(X509Certificate newCert, Certificate issuerCert) throws Exception {
         List<X509Certificate> chain = new ArrayList<>();
 
@@ -516,8 +534,6 @@ public class CertificateService implements ICertificateService {
                 case "KEY ENCIPHERMENT": bits |= KeyUsage.keyEncipherment; break;
                 case "DATA ENCIPHERMENT": bits |= KeyUsage.dataEncipherment; break;
                 case "KEY AGREEMENT": bits |= KeyUsage.keyAgreement; break;
-                case "CERTIFICATE SIGN": bits |= KeyUsage.keyCertSign; break;
-                case "CRL SIGN": bits |= KeyUsage.cRLSign; break;
                 case "ENCIPHER ONLY": bits |= KeyUsage.encipherOnly; break;
                 case "DECIPHER ONLY": bits |= KeyUsage.decipherOnly; break;
             }

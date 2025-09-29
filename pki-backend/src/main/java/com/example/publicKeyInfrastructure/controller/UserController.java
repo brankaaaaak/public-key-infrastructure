@@ -74,10 +74,16 @@ public class UserController {
         TokenPair tokenPair = service.refreshToken(request);
         return ResponseEntity.ok(tokenPair);
     }
+    @GetMapping("/all-org/{id}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<List<UserTableViewDTO>> getAllUsersForOrg(@PathVariable("id") Long orgId) {
+        List<UserTableViewDTO> users =service.getUsersForOrganization(orgId);
+        return ResponseEntity.ok(users);
+    }
     @GetMapping("/all")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<List<UserViewDTO>> getAllUsers() {
-        List<UserViewDTO> users =service.getAllUsers();
+    public ResponseEntity<List<UserTableViewDTO>> getAllUsers() {
+        List<UserTableViewDTO> users =service.getAllUsers();
         return ResponseEntity.ok(users);
     }
 }

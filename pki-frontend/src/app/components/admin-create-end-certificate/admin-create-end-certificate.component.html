@@ -21,11 +21,12 @@
             name="selectedIssuer"
             [value]="cert.serialNumber"
             [(ngModel)]="selectedIssuerSerialNumber"
+            (change)="onIssuerChange()"
           />
         </td>
         <td>{{ cert.certificateType }}</td>
         <td>{{ cert.serialNumber }}</td>
-        <td>{{ cert.organization || '/' }}</td>
+        <td>{{ cert.organization?.name || '/' }}</td>
         <td>{{ cert.owner }}</td>
         <td>{{ cert.validFrom | date:'short' }}</td>
         <td>{{ cert.validTo | date:'short' }}</td>
@@ -54,7 +55,7 @@
           />
         </td>
         <td>{{ user.email }}</td>
-        <td>{{ user.organization }}</td>
+        <td>{{ user.organization.name }}</td>
         <td>{{ user.role }}</td>
       </tr>
     </tbody>

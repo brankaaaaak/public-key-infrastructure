@@ -18,4 +18,7 @@ export class UserService {
   getAllUsers(): Observable<any> {
     return this.http.get<any>(`${environment.apiHost}/api/users/all`);
   }
+  getUsersByOrganization(orgId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiHost}/api/users/all-org/${orgId}`);
+  }
 }

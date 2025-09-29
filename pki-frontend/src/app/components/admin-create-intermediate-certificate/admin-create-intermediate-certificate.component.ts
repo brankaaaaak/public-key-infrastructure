@@ -25,7 +25,6 @@ successMessage = '';
 
   ngOnInit(): void {
     this.loadCertificates();
-    this.loadUsers();
   }
 
   private loadCertificates(): void {
@@ -35,15 +34,39 @@ successMessage = '';
     });
   }
 
-  private loadUsers(): void {
-    this.userService.getAllUsers().subscribe({
-      next: (data) => this.users = data,
-      error: (err) => console.error('Error fetching users', err)
-    });
-  }
-
    
-  
+  onIssuerChange(): void {
+    const issuer = this.caCertificates.find(
+      (c: any) => c.serialNumber === this.selectedIssuerSerialNumber
+    );
+
+    if (!issuer) {
+      this.users = [];
+      return;
+    }
+
+    if (issuer.certificateType === 'ROOT') {
+      // Root -> svi korisnici
+      this.userService.getAllUsers().subscribe({
+        next: (data) => this.users = data,
+        error: (err) => console.error('Error fetching users', err)
+      });
+    } else {
+      // Intermediate -> samo korisnici te organizacije
+      const orgId = issuer.organization?.id;
+      if (orgId) {
+        this.userService.getUsersByOrganization(orgId).subscribe({
+          next: (data) => this.users = data,
+          error: (err) => console.error('Error fetching users for org', err)
+        });
+      } else {
+        this.users = [];
+      }
+    }
+
+    // Reset selected owner
+    this.selectedOwnerId = null;
+  }
   createIntermediateCertificate(): void {
     if (!this.selectedIssuerSerialNumber) {
       this.errorMessage = 'Please select an issuer certificate.';
@@ -93,7 +116,7 @@ successMessage = '';
 
     this.certificateService.createCertificateRequest(request).subscribe({
       next: (response) => {
-        this.successMessage = 'Request for Intermediate certificate created successfully! Waiting for approval!';
+        this.successMessage = 'Intermediate certificate created successfully!';
         this.errorMessage = '';
       },
       error: (error) => {

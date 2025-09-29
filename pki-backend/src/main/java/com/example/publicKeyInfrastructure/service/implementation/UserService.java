@@ -125,10 +125,19 @@ public class UserService implements IUserService{
     }
 
     @Override
-    public List<UserViewDTO> getAllUsers() {
+    public List<UserTableViewDTO> getAllUsers() {
         return userRepository.findAllEnabledUsers().stream()
                 .map(u -> {
-                    UserViewDTO dto = new UserViewDTO(u);
+                    UserTableViewDTO dto = new UserTableViewDTO(u);
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+    @Override
+    public List<UserTableViewDTO> getUsersForOrganization(Long id) {
+        return userRepository.findAllEnabledUsersByOrganization(id).stream()
+                .map(u -> {
+                    UserTableViewDTO dto = new UserTableViewDTO(u);
                     return dto;
                 })
                 .collect(Collectors.toList());

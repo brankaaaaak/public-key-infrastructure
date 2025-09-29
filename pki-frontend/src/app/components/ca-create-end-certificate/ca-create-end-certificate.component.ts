@@ -41,8 +41,6 @@ export class CaCreateEndCertificateComponent {
       'KEY ENCIPHERMENT',
       'DATA ENCIPHERMENT',
       'KEY AGREEMENT',
-      'CERTIFICATE SIGN',
-      'CRL SIGN',
       'ENCIPHER ONLY',
       'DECIPHER ONLY'
     ];

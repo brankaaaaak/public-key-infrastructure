@@ -25,7 +25,7 @@
         </td>
         <td>{{ cert.certificateType }}</td>
         <td>{{ cert.serialNumber }}</td>
-        <td>{{ cert.organization || '/' }}</td>
+        <td>{{ cert.organization?.name || '/' }}</td>
         <td>{{ cert.owner }}</td>
         <td>{{ cert.validFrom | date:'short' }}</td>
         <td>{{ cert.validTo | date:'short' }}</td>

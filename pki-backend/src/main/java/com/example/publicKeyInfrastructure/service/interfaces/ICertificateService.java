@@ -14,5 +14,5 @@ public interface ICertificateService {
     List<CertificateDTO> getValidIntermediateCertificatesByOrganization() throws Exception;
     public CertificateDTO getValidRootCertificate();
     public List<CertificateDTO> getAllValidCertificates() ;
-
+    public List<CertificateDTO> getAllValidCertificatesWithoutRoot() ;
 }

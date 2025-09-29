@@ -25,11 +25,10 @@ successMessage = '';
 
   ngOnInit(): void {
     this.loadCertificates();
-    this.loadUsers();
   }
 
   private loadCertificates(): void {
-    this.certificateService.getCertificates().subscribe({
+    this.certificateService.getCertificatesWithoutRoot().subscribe({
       next: (intermediates) => this.caCertificates = intermediates,
       error: (err) => console.error('Error fetching certificates', err)
     });
@@ -47,8 +46,6 @@ successMessage = '';
     'KEY ENCIPHERMENT',
     'DATA ENCIPHERMENT',
     'KEY AGREEMENT',
-    'CERTIFICATE SIGN',
-    'CRL SIGN',
     'ENCIPHER ONLY',
     'DECIPHER ONLY'
   ];
@@ -110,7 +107,28 @@ onUseCsrFileChange() {
     };
     reader.readAsText(file);
   }
+onIssuerChange(): void {
+    const issuer = this.caCertificates.find(
+      (c: any) => c.serialNumber === this.selectedIssuerSerialNumber
+    );
 
+    if (!issuer) {
+      this.users = [];
+      return;
+    }
+      // Intermediate -> samo korisnici te organizacije
+      const orgId = issuer.organization?.id;
+      if (orgId) {
+        this.userService.getUsersByOrganization(orgId).subscribe({
+          next: (data) => this.users = data,
+          error: (err) => console.error('Error fetching users for org', err)
+        });
+      } else {
+        this.users = [];
+      }
+    // Reset selected owner
+    this.selectedOwnerId = null;
+  }
   createEndCertificate(): void {
     if (!this.selectedIssuerSerialNumber) {
       this.errorMessage = 'Please select an issuer certificate.';
@@ -164,7 +182,7 @@ onUseCsrFileChange() {
 
     this.certificateService.createCertificateRequest(request).subscribe({
       next: (response) => {
-        this.successMessage = 'Request for End Entity certificate created successfully! Waiting for approval!';
+        this.successMessage = 'End Entity certificate created successfully!';
         this.errorMessage = '';
       },
       error: (error) => {

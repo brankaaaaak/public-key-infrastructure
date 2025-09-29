@@ -19,24 +19,28 @@ public interface ICertificateRepository extends JpaRepository<Certificate, Long>
 
     boolean existsByCertificateType(CertificateType certificateType);
 
+    // Intermediate sertifikati po organizaciji
     @Query("SELECT c " +
-            "FROM Certificate c "+
+            "FROM Certificate c " +
+            "LEFT JOIN FETCH c.organization " +
             "WHERE c.organization.id = :orgId " +
             "AND c.certificateType = 'INTERMEDIATE' " +
             "AND c.revoked = false " +
             "AND CURRENT_TIMESTAMP BETWEEN c.validFrom AND c.validTo")
-    List<Certificate> findValidIntermediateByOrganization(Long orgId);
+    List<Certificate> findValidIntermediateByOrganization(@Param("orgId") Long orgId);
 
     // Root sertifikat (nema issuer i organizaciju, tip = ROOT, validan, nije revoked)
     @Query("SELECT c " +
-            "FROM Certificate c "+
-            "WHERE c.certificateType = 'ROOT'" +
-            "AND revoked=false " +
-            "AND CURRENT_TIMESTAMP BETWEEN c.validFrom AND c.validTo" )
+            "FROM Certificate c " +
+            "WHERE c.certificateType = 'ROOT' " +
+            "AND c.revoked = false " +
+            "AND CURRENT_TIMESTAMP BETWEEN c.validFrom AND c.validTo")
     Optional<Certificate> findValidRootCertificate();
 
+    // Svi validni intermediate sertifikati
     @Query("SELECT c " +
-            "FROM Certificate c "+
+            "FROM Certificate c " +
+            "LEFT JOIN FETCH c.organization " +
             "WHERE c.certificateType = 'INTERMEDIATE' " +
             "AND c.revoked = false " +
             "AND CURRENT_TIMESTAMP BETWEEN c.validFrom AND c.validTo")
