@@ -217,9 +217,9 @@ public class CertificateService implements ICertificateService {
 
                     // Pravimo chain pre upisa
                     X509Certificate[] chain = buildCertificateChainForKeystore(x509Certificate,issuerCert);
-                    if(subject.getPrivateKey()!=null)
-                        keystoreManager.writeForOrganization(orgId, alias, subject.getPrivateKey(), chain);
-                    else
+
+                    keystoreManager.writeForOrganization(orgId, alias, subject.getPrivateKey(), chain);
+                    if(encryptedPrivateKey==null)
                         keystoreManager.writeCertificateForOrganization(orgId,alias,x509Certificate);
                 }
 

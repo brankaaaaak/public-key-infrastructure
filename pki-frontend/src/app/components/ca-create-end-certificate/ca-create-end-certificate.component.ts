@@ -113,6 +113,10 @@ export class CaCreateEndCertificateComponent {
             this.errorMessage = 'Please select days > 0!';
             return;
           }
+      if (this.useCsrFile && !this.csrFileContent) {
+        this.errorMessage = 'Please upload a CSR PEM file!';
+        return;
+      }
     const issuer = this.caCertificates.find(
         (c: any) => c.serialNumber === this.selectedIssuerSerialNumber
       );
