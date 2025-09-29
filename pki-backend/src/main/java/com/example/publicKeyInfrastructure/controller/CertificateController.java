@@ -93,4 +93,8 @@ public class CertificateController {
         CertificateRequestViewDTO dto = requestService.denyRequest(id, reason);
         return ResponseEntity.ok(dto);
     }
+    @GetMapping("/requests/mine-ee")
+    public ResponseEntity<List<CertificateRequestViewDTO>> getMineEndEntityCertificates() throws ChangeSetPersister.NotFoundException {
+        return ResponseEntity.ok(requestService.getMineEECertificates());
+    }
 }
