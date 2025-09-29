@@ -1,1 +1,140 @@
-<p>admin-create-end-certificate works!</p>
+<div class="create-root-container">
+  <h2>Create End Entity Certificate</h2>
+  <p>This action will create a new End Entity Certificate Request.</p>
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>Select</th>
+        <th>Type</th>
+        <th>Serial Number</th>
+        <th>Organization</th>
+        <th>Owner</th>
+        <th>Valid From</th>
+        <th>Valid To</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let cert of caCertificates">
+        <td>
+          <input
+            type="radio"
+            name="selectedIssuer"
+            [value]="cert.serialNumber"
+            [(ngModel)]="selectedIssuerSerialNumber"
+          />
+        </td>
+        <td>{{ cert.certificateType }}</td>
+        <td>{{ cert.serialNumber }}</td>
+        <td>{{ cert.organization || '/' }}</td>
+        <td>{{ cert.owner }}</td>
+        <td>{{ cert.validFrom | date:'short' }}</td>
+        <td>{{ cert.validTo | date:'short' }}</td>
+      </tr>
+    </tbody>
+  </table>
+  <!-- Nova tabela za odabir owner-a -->
+  <h3>Select Owner (New CA)</h3>
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>Select</th>
+        <th>Email</th>
+        <th>Organization</th>
+        <th>Role</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let user of users">
+        <td>
+          <input
+            type="radio"
+            name="selectedOwner"
+            [value]="user.id"
+            [(ngModel)]="selectedOwnerId"
+          />
+        </td>
+        <td>{{ user.email }}</td>
+        <td>{{ user.organization }}</td>
+        <td>{{ user.role }}</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="form-group">
+    <label for="duration">Duration (in days):</label>
+    <input
+      id="duration"
+      type="number"
+      class="form-control"
+      [(ngModel)]="durationInDays"
+      placeholder="Enter number of days"
+      min="1"
+      required
+    />
+  </div>
+  <!-- Use CSR option -->
+<div class="form-group">
+  <label>
+    <input
+      type="checkbox"
+      [(ngModel)]="useCsrFile"
+      (change)="onUseCsrFileChange()"
+    />
+    Use CSR/PEM File
+  </label>
+</div>
+
+<!-- Upload CSR/PEM (samo ako je čekirano) -->
+<div class="form-group" *ngIf="useCsrFile">
+  <label for="csrUpload">Upload CSR/PEM File:</label>
+  <input
+    id="csrUpload"
+    type="file"
+    (change)="onFileSelected($event)"
+    accept=".csr,.pem"
+    class="form-control"
+  />
+</div>
+
+<!-- Key Usage (samo ako NIJE čekirano) -->
+<div class="form-group" *ngIf="!useCsrFile">
+  <label>Key Usage:</label>
+  <div *ngFor="let usage of keyUsageOptions">
+    <input
+      type="checkbox"
+      [value]="usage"
+      (change)="onKeyUsageChange($event)"
+      [checked]="selectedKeyUsages.includes(usage)"
+    />
+    {{ usage }}
+  </div>
+</div>
+
+<!-- Extended Key Usage (samo ako NIJE čekirano) -->
+<div class="form-group" *ngIf="!useCsrFile">
+  <label>Extended Key Usage:</label>
+  <div *ngFor="let extUsage of extendedKeyUsageOptions">
+    <input
+      type="checkbox"
+      [value]="extUsage"
+      (change)="onExtendedKeyUsageChange($event)"
+      [checked]="selectedExtendedKeyUsages.includes(extUsage)"
+    />
+    {{ extUsage }}
+  </div>
+</div>
+
+  
+  <button class="btn btn-primary" (click)="createEndCertificate()">
+    Create End Entity Certificate
+  </button>
+
+  <div *ngIf="successMessage" class="success-message">
+    {{ successMessage }}
+  </div>
+
+  <div *ngIf="errorMessage" class="error-message">
+    {{ errorMessage }}
+  </div>
+</div>
+
+

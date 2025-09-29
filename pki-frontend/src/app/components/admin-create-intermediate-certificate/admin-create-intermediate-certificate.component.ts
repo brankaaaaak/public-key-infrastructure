@@ -53,6 +53,10 @@ successMessage = '';
         this.errorMessage = 'Please select an owner!';
         return;
       }
+      if (this.durationInDays==0) {
+        this.errorMessage = 'Please select days > 0!';
+        return;
+      }
     const issuer = this.caCertificates.find(
         (c: any) => c.serialNumber === this.selectedIssuerSerialNumber
       );

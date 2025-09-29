@@ -109,6 +109,10 @@ export class CaCreateEndCertificateComponent {
       this.errorMessage = 'Please select an issuer certificate.';
       return;
     }
+    if (this.durationInDays==0) {
+            this.errorMessage = 'Please select days > 0!';
+            return;
+          }
     const issuer = this.caCertificates.find(
         (c: any) => c.serialNumber === this.selectedIssuerSerialNumber
       );
