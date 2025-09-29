@@ -3,6 +3,7 @@ package com.example.publicKeyInfrastructure.repository;
 import com.example.publicKeyInfrastructure.dto.CertificateDTO;
 import com.example.publicKeyInfrastructure.enumeration.CertificateType;
 import com.example.publicKeyInfrastructure.model.Certificate;
+import com.example.publicKeyInfrastructure.model.CertificateRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -34,4 +35,5 @@ public interface ICertificateRepository extends JpaRepository<Certificate, Long>
             "AND revoked=false " +
             "AND CURRENT_TIMESTAMP BETWEEN c.validFrom AND c.validTo" )
     Optional<Certificate> findValidRootCertificate();
+    Optional<Certificate> findByRequest(CertificateRequest request);
 }

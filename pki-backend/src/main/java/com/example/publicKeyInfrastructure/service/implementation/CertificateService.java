@@ -13,6 +13,7 @@ import com.example.publicKeyInfrastructure.enumeration.RequestType;
 import com.example.publicKeyInfrastructure.model.*;
 import com.example.publicKeyInfrastructure.model.Certificate;
 import com.example.publicKeyInfrastructure.repository.ICertificateRepository;
+import com.example.publicKeyInfrastructure.repository.ICertificateRequestRepository;
 import com.example.publicKeyInfrastructure.repository.IOrgKeyRepository;
 import com.example.publicKeyInfrastructure.repository.IUserRepository;
 import com.example.publicKeyInfrastructure.service.interfaces.ICertificateService;
@@ -29,6 +30,7 @@ import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cglib.core.Local;
 import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.security.core.Authentication;
@@ -38,11 +40,13 @@ import org.springframework.stereotype.Service;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.security.spec.X509EncodedKeySpec;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -66,6 +70,12 @@ public class CertificateService implements ICertificateService {
 
     @Autowired
     private KeystoreManager keystoreManager;
+
+    @Autowired
+    private ICertificateRequestRepository certificateRequestRepository;
+
+    @Value("${KEYSTORE_PASSWORD}")
+    private String keystorePassword;
 
     @Override
     public CertificateDTO createCertificate(CertificateRequest certificateRequest){
@@ -187,6 +197,7 @@ public class CertificateService implements ICertificateService {
                 }
 
                 Certificate certificate = new Certificate(
+                        request,
                         request.getCertificateType(),
                         owner,
                         x509Certificate.getSerialNumber().toString(),
@@ -383,6 +394,44 @@ public class CertificateService implements ICertificateService {
                 .findValidRootCertificate()
                 .orElseThrow(() -> new RuntimeException("Root certificate not found"));
         return mapToDTO(root);
+    }
+
+    @Override
+    public byte[] generateKeystore(Long requestId) throws Exception {
+        CertificateRequest request = certificateRequestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Certificate request not found"));
+
+        if (request.getRequestType() != RequestType.ACCEPTED) {
+            throw new RuntimeException("Certificate not issued yet for this request");
+        }
+        Certificate cert = certificateRepository.findByRequest(request)
+                .orElseThrow(() -> new RuntimeException("Certificate not found for this request"));
+
+        //rekonstrukcija privatnog i javnog
+        OrgKey key = orgKeyRepository.findByOrgId(request.getSubject().getOrganization().getId());
+        byte[] orgKeyBytes = masterKeyManager.decryptWithRoot(key.getEncryptedKey());
+        SecretKey decryptedOrgKeyIssuer = CryptoUtils.bytesToSecretKey(orgKeyBytes);
+        byte[] decryptedPrivateKeyBytes = CryptoUtils.decryptAES(cert.getEncryptedPrivateKey(), decryptedOrgKeyIssuer);
+        PrivateKey privateKey = CryptoUtils.bytesToPrivateKey(decryptedPrivateKeyBytes);
+
+        PublicKey publicKey = CryptoUtils.bytesToPublicKey(cert.getPublicKey());
+
+        X509Certificate x509 = keystoreManager.readOrgCertificate(request.getSubject().getOrganization().getId(), cert.getSerialNumber());
+
+        KeyStore downloadKs = KeyStore.getInstance("PKCS12");
+        downloadKs.load(null, keystorePassword.toCharArray());
+
+        downloadKs.setKeyEntry(
+                "cert-" + cert.getSerialNumber(),
+                privateKey,
+                keystorePassword.toCharArray(),
+                new java.security.cert.Certificate[]{x509}
+        );
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        downloadKs.store(bos, keystorePassword.toCharArray());
+
+        return bos.toByteArray();
     }
 
     private CertificateDTO mapToDTO(Certificate certificate) {

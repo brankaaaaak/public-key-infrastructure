@@ -61,8 +61,8 @@ public class CertificateRequestService implements ICertificateRequestService {
                 .anyMatch((r->r.getName().equals("ROLE_USER")));
         if(isAdmin){
             newRequest.setRequestType(RequestType.ACCEPTED);
-            certificateService.createCertificate(newRequest);
             newRequest = certificateRequestRepository.save(newRequest);
+            certificateService.createCertificate(newRequest);
         }
         else if(isCAUser) {
             if(newRequest.getCertificateType()==CertificateType.INTERMEDIATE || newRequest.getCertificateType()==CertificateType.END)

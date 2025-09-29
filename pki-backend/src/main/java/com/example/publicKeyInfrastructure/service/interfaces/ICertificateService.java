@@ -13,6 +13,6 @@ public interface ICertificateService {
     public Boolean checkingValidation(String serialNumber) throws ChangeSetPersister.NotFoundException;
     List<CertificateDTO> getValidIntermediateCertificatesByOrganization() throws Exception;
     public CertificateDTO getValidRootCertificate();
-
+    public byte[] generateKeystore(Long requestId) throws Exception;
 
 }
