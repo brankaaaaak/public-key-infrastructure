@@ -16,4 +16,5 @@ public class CreateCertificateRequestDTO {
     private List<String> keyUsages;
     private List<String> extendedKeyUsages;
     private String csrPem;
+    private Long ownerId;
 }
