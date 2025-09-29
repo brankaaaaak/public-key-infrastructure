@@ -132,7 +132,7 @@ public class CertificateRequestService implements ICertificateRequestService {
     }
 
     @Override
-    public List<CertificateRequestViewDTO> getMineEECertificates() throws ChangeSetPersister.NotFoundException {
+    public List<CertificateRequestViewDTO> getMineEECertificatesRequests() throws ChangeSetPersister.NotFoundException {
         User loggedUser = getLoggedUser();
         List<CertificateRequest> requests = this.certificateRequestRepository.findAllBySubjectAndCertificateType(loggedUser, CertificateType.END);
         return requests.stream()

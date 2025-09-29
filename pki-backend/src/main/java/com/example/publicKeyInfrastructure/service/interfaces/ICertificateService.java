@@ -1,6 +1,7 @@
 package com.example.publicKeyInfrastructure.service.interfaces;
 
 import com.example.publicKeyInfrastructure.dto.CertificateDTO;
+import com.example.publicKeyInfrastructure.dto.CertificateRequestViewDTO;
 import com.example.publicKeyInfrastructure.model.CertificateRequest;
 import org.springframework.data.crossstore.ChangeSetPersister;
 
@@ -13,6 +14,7 @@ public interface ICertificateService {
     public Boolean checkingValidation(String serialNumber) throws ChangeSetPersister.NotFoundException;
     List<CertificateDTO> getValidIntermediateCertificatesByOrganization() throws Exception;
     public CertificateDTO getValidRootCertificate();
-    public byte[] generateKeystore(Long requestId) throws Exception;
+    public byte[] generateKeystore(Long id) throws Exception;
+    List<CertificateDTO> getMineEECertificates() throws ChangeSetPersister.NotFoundException;
 
 }

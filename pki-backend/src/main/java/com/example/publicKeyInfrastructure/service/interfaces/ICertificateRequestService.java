@@ -14,5 +14,5 @@ public interface ICertificateRequestService {
     List<CertificateRequestViewDTO> getPendingRequestsForLoggedOwner() throws Exception;
     List<CertificateRequestViewDTO> getPendingRequestsForAdmin() throws Exception;
     CertificateRequestViewDTO denyRequest(Long id, String reason);
-    List<CertificateRequestViewDTO> getMineEECertificates() throws ChangeSetPersister.NotFoundException;
+    List<CertificateRequestViewDTO> getMineEECertificatesRequests() throws ChangeSetPersister.NotFoundException;
 }

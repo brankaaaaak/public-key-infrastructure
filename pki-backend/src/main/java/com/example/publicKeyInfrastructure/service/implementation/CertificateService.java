@@ -397,18 +397,13 @@ public class CertificateService implements ICertificateService {
     }
 
     @Override
-    public byte[] generateKeystore(Long requestId) throws Exception {
-        CertificateRequest request = certificateRequestRepository.findById(requestId)
-                .orElseThrow(() -> new RuntimeException("Certificate request not found"));
+    public byte[] generateKeystore(Long id) throws Exception {
 
-        if (request.getRequestType() != RequestType.ACCEPTED) {
-            throw new RuntimeException("Certificate not issued yet for this request");
-        }
-        Certificate cert = certificateRepository.findByRequest(request)
+        Certificate cert = certificateRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Certificate not found for this request"));
 
         //rekonstrukcija privatnog i javnog
-        OrgKey key = orgKeyRepository.findByOrgId(request.getSubject().getOrganization().getId());
+        OrgKey key = orgKeyRepository.findByOrgId(cert.getOwner().getOrganization().getId());
         byte[] orgKeyBytes = masterKeyManager.decryptWithRoot(key.getEncryptedKey());
         SecretKey decryptedOrgKeyIssuer = CryptoUtils.bytesToSecretKey(orgKeyBytes);
         byte[] decryptedPrivateKeyBytes = CryptoUtils.decryptAES(cert.getEncryptedPrivateKey(), decryptedOrgKeyIssuer);
@@ -416,7 +411,7 @@ public class CertificateService implements ICertificateService {
 
         PublicKey publicKey = CryptoUtils.bytesToPublicKey(cert.getPublicKey());
 
-        X509Certificate x509 = keystoreManager.readOrgCertificate(request.getSubject().getOrganization().getId(), cert.getSerialNumber());
+        X509Certificate x509 = keystoreManager.readOrgCertificate(cert.getOwner().getOrganization().getId(), cert.getSerialNumber());
 
         KeyStore downloadKs = KeyStore.getInstance("PKCS12");
         downloadKs.load(null, keystorePassword.toCharArray());
@@ -432,6 +427,15 @@ public class CertificateService implements ICertificateService {
         downloadKs.store(bos, keystorePassword.toCharArray());
 
         return bos.toByteArray();
+    }
+
+    @Override
+    public List<CertificateDTO> getMineEECertificates() throws ChangeSetPersister.NotFoundException {
+        User loggedUser = getLoggedUser();
+        List<Certificate> requests = this.certificateRepository.findAllByOwner(loggedUser);
+        return requests.stream()
+                .map(CertificateDTO::new)
+                .collect(Collectors.toList());
     }
 
     private CertificateDTO mapToDTO(Certificate certificate) {
@@ -499,6 +503,5 @@ public class CertificateService implements ICertificateService {
         }
         return ekuList;
     }
-
 
 }
