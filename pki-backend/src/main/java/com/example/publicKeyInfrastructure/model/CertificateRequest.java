@@ -53,7 +53,6 @@ public class CertificateRequest {
     @Column(name="csr_pem_file",nullable=true)
     private String csrPem;
 
-
     public CertificateRequest(CreateCertificateRequestDTO dto){
         this.certificateType = dto.getCertificateType() != null
                 ? CertificateType.valueOf(dto.getCertificateType())
