@@ -42,4 +42,10 @@ export class CertificateService {
       responseType: 'blob' 
     });
   }
+  getCertificates(): Observable<any> {
+    return this.http.get<any>(`${environment.apiHost}/api/certificate/all`);
+  }
+  getCertificatesWithoutRoot(): Observable<any> {
+    return this.http.get<any>(`${environment.apiHost}/api/certificate/all-without-root`);
+  }
 }

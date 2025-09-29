@@ -14,7 +14,6 @@ import java.security.cert.*;
 import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.List;
-
 @Component
 public class KeystoreManager {
 
@@ -176,4 +175,3 @@ public class KeystoreManager {
         }
     }
 }
-

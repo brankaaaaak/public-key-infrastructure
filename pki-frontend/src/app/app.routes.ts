@@ -14,6 +14,8 @@ import { AdminManageRequestsComponent } from './components/admin-manage-requests
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { CaManageRequestsComponent } from './components/ca-manage-requests/ca-manage-requests.component';
 import { UserDownloadComponent } from './components/user-download/user-download.component';
+import { AdminCreateIntermediateCertificateComponent } from './components/admin-create-intermediate-certificate/admin-create-intermediate-certificate.component';
+import { AdminCreateEndCertificateComponent } from './components/admin-create-end-certificate/admin-create-end-certificate.component';
 
 export const routes: Routes = [
     { path: '', component: WelcomePageComponent },
@@ -33,4 +35,6 @@ export const routes: Routes = [
     { path: 'admin/requests', component: AdminManageRequestsComponent},
     { path: 'ca/requests', component: CaManageRequestsComponent},
     { path: 'user/download', component: UserDownloadComponent},
+    { path: 'admin/create-intermediate', component: AdminCreateIntermediateCertificateComponent},
+    {path:'admin/create-end-certificate',component:AdminCreateEndCertificateComponent}
 ];

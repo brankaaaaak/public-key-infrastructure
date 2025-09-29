@@ -110,4 +110,17 @@ public class CertificateController {
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(resource);
     }
+    @GetMapping("/all")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<List<CertificateDTO>> getAllValidCertificates() {
+        List<CertificateDTO> certificates = certificateService.getAllValidCertificates();
+        return ResponseEntity.ok(certificates);
+    }
+
+    @GetMapping("/all-without-root")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<List<CertificateDTO>> getAllValidCertificatesWithoutRoot() {
+        List<CertificateDTO> certificates = certificateService.getAllValidCertificatesWithoutRoot();
+        return ResponseEntity.ok(certificates);
+    }
 }

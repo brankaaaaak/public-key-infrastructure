@@ -17,4 +17,6 @@ public interface ICertificateService {
     public byte[] generateKeystore(Long id) throws Exception;
     List<CertificateDTO> getMineEECertificates() throws ChangeSetPersister.NotFoundException;
 
+    public List<CertificateDTO> getAllValidCertificates() ;
+    public List<CertificateDTO> getAllValidCertificatesWithoutRoot() ;
 }

@@ -59,7 +59,7 @@ public class Certificate {
     @JoinColumn(name = "organization_id", nullable = true)
     private Organization organization;
 
-    @Column(name="encrypted_private_key",nullable = false,columnDefinition = "bytea")
+    @Column(name="encrypted_private_key",nullable = true,columnDefinition = "bytea")
     private byte[] encryptedPrivateKey;
 
     @Column(name="public_key", nullable = false,columnDefinition = "bytea")

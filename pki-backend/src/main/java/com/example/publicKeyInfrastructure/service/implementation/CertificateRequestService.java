@@ -51,14 +51,20 @@ public class CertificateRequestService implements ICertificateRequestService {
                     .orElseThrow(() -> new Exception("Certificate not found!"));
         }
         newRequest.setIssuer(issuer);
-        User subject = getLoggedUser();
-        newRequest.setSubject(subject);
-        boolean isAdmin = subject.getRoles().stream()
+        User loggedUser=getLoggedUser();
+        boolean isAdmin = loggedUser.getRoles().stream()
                 .anyMatch(r -> r.getName().equals("ROLE_ADMIN"));
-        boolean isCAUser=subject.getRoles().stream()
+        boolean isCAUser=loggedUser.getRoles().stream()
                 .anyMatch((r->r.getName().equals("ROLE_CA")));
-        boolean isUser=subject.getRoles().stream()
+        boolean isUser=loggedUser.getRoles().stream()
                 .anyMatch((r->r.getName().equals("ROLE_USER")));
+        User subject;
+        if(isAdmin && CertificateType.valueOf(request.getCertificateType())!=CertificateType.ROOT )
+            subject=userRepository.findById(request.getOwnerId())
+                    .orElseThrow(() -> new Exception("User not found!"));
+        else
+            subject = getLoggedUser();
+        newRequest.setSubject(subject);
         if(isAdmin){
             newRequest.setRequestType(RequestType.ACCEPTED);
             newRequest = certificateRequestRepository.save(newRequest);

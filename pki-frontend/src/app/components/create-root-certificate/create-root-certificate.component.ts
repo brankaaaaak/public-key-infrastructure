@@ -17,6 +17,10 @@ export class CreateRootCertificateComponent {
   constructor(private certificateService: CertificateService) {}
   
   createRootCertificate(): void {
+    if (this.durationInDays==0) {
+            this.errorMessage = 'Please select days > 0!';
+            return;
+          }
     const request = {
       certificateType: 'ROOT',
       issuer: null,

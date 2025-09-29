@@ -1,9 +1,15 @@
 package com.example.publicKeyInfrastructure.crypto;
 
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.pkcs.PKCS10CertificationRequest;
+import org.bouncycastle.util.io.pem.PemReader;
+
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.IOException;
+import java.io.StringReader;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -87,5 +93,37 @@ public class CryptoUtils {
         // Čita BasicConstraints: ako je CA=true vraća true, inače false
         return cert.getBasicConstraints() != -1;
     }
+
+        /**
+         * Parsira PEM string CSR u PKCS10CertificationRequest objekat.
+         */
+        public static PKCS10CertificationRequest parseCsrFromPem(String pem) throws IOException {
+            try (PemReader reader = new PemReader(new StringReader(pem))) {
+                byte[] content = reader.readPemObject().getContent();
+                return new PKCS10CertificationRequest(content);
+            }
+        }
+
+        /**
+         * Dobavlja javni ključ iz PKCS#10 CSR.
+         * RSA ili EC ključ zavisi od generacije CSR-a.
+         */
+        public static PublicKey getPublicKeyFromCsr(PKCS10CertificationRequest csr) throws Exception {
+            byte[] keyBytes = csr.getSubjectPublicKeyInfo().getEncoded();
+            X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
+
+            // Ako koristiš RSA ključeve:
+            KeyFactory kf = KeyFactory.getInstance("RSA");
+
+            // Ako koristiš EC ključeve, promeni u: KeyFactory.getInstance("EC");
+            return kf.generatePublic(spec);
+        }
+
+        /**
+         * Dobavlja X500Name iz CSR-a.
+         */
+        public static X500Name getSubjectFromCsr(PKCS10CertificationRequest csr) {
+            return csr.getSubject();
+        }
 
 }
