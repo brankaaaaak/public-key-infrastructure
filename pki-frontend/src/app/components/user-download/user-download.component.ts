@@ -21,13 +21,13 @@ export class UserDownloadComponent {
     });
   }
 
-  downloadCertificate(requestId: number): void {
-    this.service.downloadCertificate(requestId).subscribe({
+  downloadCertificate(cert: any): void {
+    this.service.downloadCertificate(cert.id).subscribe({
       next: (blob: Blob) => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `certificate-${requestId}.p12`;
+        a.download = `certificate-${cert.serialNumber}.p12`;
         a.click();
         window.URL.revokeObjectURL(url);
       },
@@ -37,5 +37,9 @@ export class UserDownloadComponent {
       }
     });
   }
+  isExpired(validTo: Date | string): boolean {
+    return new Date(validTo) < new Date();
+  }
+
 
 }

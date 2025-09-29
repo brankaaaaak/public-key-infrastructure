@@ -1,42 +1,39 @@
 <div class="requests-container">
-  <h2>My Certificate Requests</h2>
+  <h2>My Certificates</h2>
 
   <table class="requests-table" *ngIf="requests && requests.length > 0">
     <thead>
       <tr>
-        <th>ID</th>
-        <th>Created At</th>
-        <th>Status</th>
-        <th>Issuer Serial</th>
-        <th>Issuer Type</th>
+        <!-- <th>ID</th> --> 
+        <th>Serial Number</th>
+        <th>Owner (Email)</th>
+        <th>Organization</th>
         <th>Valid From</th>
         <th>Valid To</th>
-        <th>Cert Type</th>
-        <th>Subject Email</th>
-        <th>Duration</th>
+        <th>Certificate Type</th>
         <th>Actions</th>
       </tr>
     </thead>
     <tbody>
-      <tr *ngFor="let req of requests">
-        <td>{{ req.id }}</td>
-        <td>{{ req.createdAt | date:'yyyy-MM-dd HH:mm' }}</td>
-        <td>{{ req.requestType }}</td>
-        <td>{{ req.issuerSerialNumber }}</td>
-        <td>{{ req.issuerType }}</td>
-        <td>{{ req.issuerValidFrom | date:'yyyy-MM-dd' }}</td>
-        <td>{{ req.issuerValidTo | date:'yyyy-MM-dd' }}</td>
-        <td>{{ req.certificateType }}</td>
-        <td>{{ req.subjectEmail }}</td>
-        <td>{{ req.durationInDays }} days</td>
+      <tr *ngFor="let cert of requests">
+        <!-- <td>{{ cert.id }}</td> --> 
+        <td>{{ cert.serialNumber }}</td>
+        <td>{{ cert.owner }}</td>
+        <td>{{ cert.organization || 'N/A' }}</td>
+        <td>{{ cert.validFrom | date:'yyyy-MM-dd' }}</td>
         <td>
-          <button class="btn-download" (click)="downloadCertificate(req.id)" [disabled]="req.requestType !== 'ACCEPTED'">Download</button>
+          {{ cert.validTo | date:'yyyy-MM-dd' }}
+          <span *ngIf="isExpired(cert.validTo)" class="expired">(Expired)</span>
+        </td>
+        <td>{{ cert.certificateType }}</td>
+        <td>
+          <button class="btn-download" (click)="downloadCertificate(cert)" [disabled]="isExpired(cert.validTo)">Download</button>
         </td>
       </tr>
     </tbody>
   </table>
 
-  <div *ngIf="requests.length === 0" class="no-data">
-    No certificate requests found.
+  <div *ngIf="requests && requests.length === 0" class="no-data">
+    No certificates found.
   </div>
 </div>
