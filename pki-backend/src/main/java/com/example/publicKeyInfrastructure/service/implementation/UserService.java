@@ -22,9 +22,11 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -120,6 +122,16 @@ public class UserService implements IUserService{
 
         String accessToken = jwtService.generateAccessToken(authentication);
         return new TokenPair(accessToken, refreshToken);
+    }
+
+    @Override
+    public List<UserViewDTO> getAllUsers() {
+        return userRepository.findAllEnabledUsers().stream()
+                .map(u -> {
+                    UserViewDTO dto = new UserViewDTO(u);
+                    return dto;
+                })
+                .collect(Collectors.toList());
     }
 
 }

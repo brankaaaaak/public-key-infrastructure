@@ -50,6 +50,29 @@ export class CaCreateIntermediateCertificateComponent {
       this.errorMessage = 'Please select an issuer certificate.';
       return;
     }
+    const issuer = this.caCertificates.find(
+        (c: any) => c.serialNumber === this.selectedIssuerSerialNumber
+      );
+
+      if (!issuer) {
+        this.errorMessage = 'Issuer not found.';
+        return;
+      }
+    // Računaj kraj važenja novog sertifikata
+      const startDate = new Date();
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + this.durationInDays);
+    
+      const issuerValidFrom = new Date(issuer.validFrom);
+      const issuerValidTo = new Date(issuer.validTo);
+    
+      // Provera: novi sertifikat mora stati unutar perioda issuera
+      if (startDate < issuerValidFrom || endDate > issuerValidTo) {
+        this.errorMessage = `Duration must be within issuer's validity period: 
+              ${issuerValidFrom.toDateString()} - ${issuerValidTo.toDateString()}`;
+        this.successMessage = '';
+        return;
+      }
     const request = {
       certificateType: 'INTERMEDIATE',
       issuer: this.selectedIssuerSerialNumber,

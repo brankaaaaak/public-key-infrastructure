@@ -15,4 +15,7 @@ export class UserService {
   register(dto: any): Observable<any> {
     return this.http.post<any>(`${environment.apiHost}/api/users/register`, dto);
   }
+  getAllUsers(): Observable<any> {
+    return this.http.get<any>(`${environment.apiHost}/api/users/all`);
+  }
 }

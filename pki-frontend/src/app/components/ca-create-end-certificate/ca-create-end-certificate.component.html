@@ -44,8 +44,33 @@
       required
     />
   </div>
-  <!-- Key Usage -->
+  
+    <!-- Use CSR option -->
   <div class="form-group">
+    <label>
+      <input
+        type="checkbox"
+        [(ngModel)]="useCsrFile"
+        (change)="onUseCsrFileChange()"
+      />
+      Use CSR/PEM File
+    </label>
+  </div>
+
+  <!-- Upload CSR/PEM (samo ako je čekirano) -->
+  <div class="form-group" *ngIf="useCsrFile">
+    <label for="csrUpload">Upload CSR/PEM File:</label>
+    <input
+      id="csrUpload"
+      type="file"
+      (change)="onFileSelected($event)"
+      accept=".csr,.pem"
+      class="form-control"
+    />
+  </div>
+
+  <!-- Key Usage (samo ako NIJE čekirano) -->
+  <div class="form-group" *ngIf="!useCsrFile">
     <label>Key Usage:</label>
     <div *ngFor="let usage of keyUsageOptions">
       <input
@@ -58,8 +83,8 @@
     </div>
   </div>
 
-  <!-- Extended Key Usage -->
-  <div class="form-group">
+  <!-- Extended Key Usage (samo ako NIJE čekirano) -->
+  <div class="form-group" *ngIf="!useCsrFile">
     <label>Extended Key Usage:</label>
     <div *ngFor="let extUsage of extendedKeyUsageOptions">
       <input
@@ -70,18 +95,6 @@
       />
       {{ extUsage }}
     </div>
-  </div>
-
-  <!-- Upload CSR/PEM -->
-  <div class="form-group">
-    <label for="csrUpload">Upload CSR/PEM File:</label>
-    <input
-      id="csrUpload"
-      type="file"
-      (change)="onFileSelected($event)"
-      accept=".csr,.pem"
-      class="form-control"
-    />
   </div>
   <button class="btn btn-primary" (click)="createEndCertificate()">
     Create End Entity Certificate

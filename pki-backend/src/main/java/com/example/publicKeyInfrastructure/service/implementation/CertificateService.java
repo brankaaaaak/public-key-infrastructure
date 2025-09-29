@@ -409,11 +409,11 @@ public class CertificateService implements ICertificateService {
                 certBuilder.addExtension(Extension.keyUsage, true, new KeyUsage(KeyUsage.keyCertSign | KeyUsage.cRLSign));
                 break;
             case INTERMEDIATE:
-                certBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(0));
+                certBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(true));
                 certBuilder.addExtension(Extension.keyUsage, true, new KeyUsage(KeyUsage.keyCertSign | KeyUsage.cRLSign));
                 break;
             case END:
-                certBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(false));
+                certBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(0));
                 if (subject.getKeyUsages() != null) {
                     int keyUsageBits = buildKeyUsageBits(subject.getKeyUsages());
                     certBuilder.addExtension(Extension.keyUsage, true, new KeyUsage(keyUsageBits));
@@ -461,7 +461,20 @@ public class CertificateService implements ICertificateService {
                 .orElseThrow(() -> new RuntimeException("Root certificate not found"));
         return mapToDTO(root);
     }
+    @Override
+    public List<CertificateDTO> getAllValidCertificates() {
+        List<CertificateDTO> allCertificates = new ArrayList<>();
 
+        // Validni root
+        certificateRepository.findValidRootCertificate()
+                .ifPresent(root -> allCertificates.add(mapToDTO(root)));
+
+        // Validni intermediate
+        List<Certificate> intermediates = certificateRepository.findValidIntermediate();
+        intermediates.forEach(intermediate -> allCertificates.add(mapToDTO(intermediate)));
+
+        return allCertificates;
+    }
     private CertificateDTO mapToDTO(Certificate certificate) {
         return new CertificateDTO(certificate);
     }// build chain for keystore

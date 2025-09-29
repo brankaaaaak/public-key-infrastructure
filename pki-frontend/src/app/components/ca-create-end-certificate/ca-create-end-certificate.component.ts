@@ -78,7 +78,22 @@ export class CaCreateEndCertificateComponent {
         this.selectedExtendedKeyUsages = this.selectedExtendedKeyUsages.filter(u => u !== value);
       }
     }
-  
+  useCsrFile: boolean = false;
+
+  onUseCsrFileChange() {
+    if (this.useCsrFile) {
+      // Resetuj key usages ako koristi CSR
+      this.selectedKeyUsages = [];
+      this.selectedExtendedKeyUsages = [];
+    } else {
+      // Resetuj fajl ako isključi CSR
+      this.csrFileContent = null;
+      const fileInput = document.getElementById('csrUpload') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = ''; // resetuje input polje
+      }
+    }
+  }
     onFileSelected(event: any) {
       const file = event.target.files[0];
       if (!file) return;
@@ -94,6 +109,29 @@ export class CaCreateEndCertificateComponent {
       this.errorMessage = 'Please select an issuer certificate.';
       return;
     }
+    const issuer = this.caCertificates.find(
+        (c: any) => c.serialNumber === this.selectedIssuerSerialNumber
+      );
+
+      if (!issuer) {
+        this.errorMessage = 'Issuer not found.';
+        return;
+      }
+    // Računaj kraj važenja novog sertifikata
+      const startDate = new Date();
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + this.durationInDays);
+    
+      const issuerValidFrom = new Date(issuer.validFrom);
+      const issuerValidTo = new Date(issuer.validTo);
+    
+      // Provera: novi sertifikat mora stati unutar perioda issuera
+      if (startDate < issuerValidFrom || endDate > issuerValidTo) {
+        this.errorMessage = `Duration must be within issuer's validity period: 
+              ${issuerValidFrom.toDateString()} - ${issuerValidTo.toDateString()}`;
+        this.successMessage = '';
+        return;
+      }
     const request = {
       certificateType: 'END',
       issuer: this.selectedIssuerSerialNumber,

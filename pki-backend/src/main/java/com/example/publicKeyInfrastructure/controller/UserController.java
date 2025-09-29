@@ -11,8 +11,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -72,6 +74,11 @@ public class UserController {
         TokenPair tokenPair = service.refreshToken(request);
         return ResponseEntity.ok(tokenPair);
     }
-
+    @GetMapping("/all")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<List<UserViewDTO>> getAllUsers() {
+        List<UserViewDTO> users =service.getAllUsers();
+        return ResponseEntity.ok(users);
+    }
 }
 
