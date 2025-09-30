@@ -16,8 +16,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ICertificateRepository extends JpaRepository<Certificate, Long> {
-    @Query("SELECT c FROM Certificate c WHERE c.serialNumber = :serialNumber")
-    Optional<Certificate> findBySerialNumber(@Param("serialNumber") String serialNumber);
+    /*@Query("SELECT c FROM Certificate c WHERE c.serialNumber = :serialNumber")
+    Optional<Certificate> findBySerialNumber(@Param("serialNumber") String serialNumber);*/
 
     boolean existsByCertificateType(CertificateType certificateType);
 
@@ -40,6 +40,8 @@ public interface ICertificateRepository extends JpaRepository<Certificate, Long>
     Optional<Certificate> findValidRootCertificate();
     Optional<Certificate> findByRequest(CertificateRequest request);
     List<Certificate> findAllByOwner(User owner);
+    List<Certificate> findByIssuerSerialNumber(String issuerSerialNumber);
+    Optional<Certificate> findBySerialNumber(String serialNumber);
 
     // Svi validni intermediate sertifikati
     @Query("SELECT c " +
