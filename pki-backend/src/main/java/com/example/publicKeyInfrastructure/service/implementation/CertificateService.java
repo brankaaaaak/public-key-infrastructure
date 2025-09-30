@@ -6,6 +6,7 @@ import com.example.publicKeyInfrastructure.crypto.MasterKeyManager;
 import com.example.publicKeyInfrastructure.data.CertificateIssuer;
 import com.example.publicKeyInfrastructure.data.CertificateSubject;
 import com.example.publicKeyInfrastructure.dto.CertificateDTO;
+import com.example.publicKeyInfrastructure.dto.CertificateDetailsDTO;
 import com.example.publicKeyInfrastructure.dto.CertificateTreeDTO;
 import com.example.publicKeyInfrastructure.enumeration.CertificateType;
 import com.example.publicKeyInfrastructure.model.*;
@@ -28,6 +29,7 @@ import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.crossstore.ChangeSetPersister;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -446,19 +448,67 @@ public class CertificateService implements ICertificateService {
     }
 
     @Override
-    public CertificateTreeDTO getCertificateChainForLoggedCA() throws Exception {
+    public CertificateTreeDTO getCertificateChainForLoggedUser() throws Exception {
         User loggedUser = getLoggedUser();
 
-        // nađi root/intermediate sertifikate koji pripadaju CA korisniku
-        List<Certificate> roots = certificateRepository.findByOwnerId(loggedUser.getId());
-
-        if (roots.isEmpty()) {
+        // Uzimamo sve sertifikate tog usera
+        List<Certificate> myCerts = certificateRepository.findByOwnerId(loggedUser.getId());
+        if (myCerts.isEmpty()) {
             throw new RuntimeException("No certificates found for this user.");
         }
 
-        // za svaki sertifikat napravi stablo
-        return buildTree(roots.get(0)); // uzimam prvi – ako može više, vraćaj listu
+        // Ako je END korisnik -> gradimo chain prema root-u
+        Optional<Certificate> endCert = myCerts.stream()
+                .filter(c -> c.getCertificateType().equals(CertificateType.END))
+                .findFirst();
+
+        if (endCert.isPresent()) {
+            return buildChainUpwards(endCert.get(), new HashSet<>());
+        }
+
+        // Ako je CA (ROOT ili INTERMEDIATE) -> gradimo stablo nadole
+        Optional<Certificate> caCert = myCerts.stream()
+                .filter(c -> !c.getCertificateType().equals(CertificateType.END))
+                .findFirst();
+
+        if (caCert.isPresent()) {
+            return buildTree(caCert.get(), new HashSet<>());
+        }
+
+        throw new RuntimeException("Unexpected certificate configuration for this user.");
     }
+
+    private CertificateTreeDTO buildChainUpwards(Certificate cert, Set<String> visited) {
+        if (visited.contains(cert.getSerialNumber())) {
+            return null;
+        }
+        visited.add(cert.getSerialNumber());
+
+        final CertificateTreeDTO[] dto = {new CertificateTreeDTO(
+                cert.getSerialNumber(),
+                cert.getCertificateType(),
+                cert.getOwner().getEmail(),
+                cert.isRevoked(),
+                new ArrayList<>()
+        )};
+
+        // ako nije root -> tražimo issuer-a
+        if (!cert.getSerialNumber().equals(cert.getIssuerSerialNumber())) {
+            certificateRepository.findBySerialNumber(cert.getIssuerSerialNumber())
+                    .ifPresent(issuer -> {
+                        CertificateTreeDTO issuerDto = buildChainUpwards(issuer, visited);
+                        if (issuerDto != null) {
+                            // dodajemo issuer-a kao roditelja, ne kao child
+                            issuerDto.getChildren().add(dto[0]);
+                            dto[0] = issuerDto; // pomeramo root reference
+                        }
+                    });
+        }
+
+        return dto[0];
+    }
+
+
 
     private CertificateTreeDTO buildTree(Certificate cert) {
         return buildTree(cert, new HashSet<>());
@@ -466,7 +516,6 @@ public class CertificateService implements ICertificateService {
 
     private CertificateTreeDTO buildTree(Certificate cert, Set<String> visited) {
         if (visited.contains(cert.getSerialNumber())) {
-            // već viđen, prekidamo da ne napravimo beskonačnu petlju
             return null;
         }
         visited.add(cert.getSerialNumber());
@@ -479,6 +528,7 @@ public class CertificateService implements ICertificateService {
                 new ArrayList<>()
         );
 
+        // nađi decu koja su izdata ovim certom
         List<Certificate> children = certificateRepository.findChildrenByIssuerSerialNumber(cert.getSerialNumber());
         for (Certificate child : children) {
             CertificateTreeDTO childDto = buildTree(child, visited);
@@ -488,6 +538,34 @@ public class CertificateService implements ICertificateService {
         }
 
         return dto;
+    }
+
+    @Override
+    public CertificateDetailsDTO getCertificateDetails(String serialNumber) {
+        User loggedUser;
+        try {
+            loggedUser = getLoggedUser();
+        } catch (ChangeSetPersister.NotFoundException e) {
+            throw new RuntimeException("Logged user not found", e);
+        }
+
+        Certificate cert = certificateRepository.findBySerialNumber(serialNumber)
+                .orElseThrow(() -> new RuntimeException("Certificate not found"));
+
+        if (!cert.getOwner().getId().equals(loggedUser.getId()) &&
+                !loggedUser.getRoles().contains("ROLE_ADMIN")) {
+            throw new AccessDeniedException("User not allowed to view this certificate");
+        }
+
+        return new CertificateDetailsDTO(
+                cert.getSerialNumber(),
+                cert.getCertificateType(),
+                cert.getOwner().getEmail(),
+                cert.getIssuerSerialNumber(),
+                cert.getValidFrom().toString(),
+                cert.getValidTo().toString(),
+                cert.isRevoked()
+        );
     }
 
 

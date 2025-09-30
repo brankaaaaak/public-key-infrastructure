@@ -1,6 +1,7 @@
 package com.example.publicKeyInfrastructure.service.interfaces;
 
 import com.example.publicKeyInfrastructure.dto.CertificateDTO;
+import com.example.publicKeyInfrastructure.dto.CertificateDetailsDTO;
 import com.example.publicKeyInfrastructure.dto.CertificateTreeDTO;
 import com.example.publicKeyInfrastructure.model.CertificateRequest;
 import org.springframework.data.crossstore.ChangeSetPersister;
@@ -16,5 +17,7 @@ public interface ICertificateService {
     public CertificateDTO getValidRootCertificate();
 
 
-    CertificateTreeDTO getCertificateChainForLoggedCA() throws Exception;
+    CertificateTreeDTO getCertificateChainForLoggedUser() throws Exception;
+
+    CertificateDetailsDTO getCertificateDetails(String serialNumber) ;
 }

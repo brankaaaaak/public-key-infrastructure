@@ -2,6 +2,7 @@ import {Component, OnInit} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {NgForOf, NgIf, NgTemplateOutlet} from '@angular/common';
 import {CertificateService} from '../../services/certificate.service';
+import {log} from '@angular-devkit/build-angular/src/builders/ssr-dev-server';
 interface CertificateTreeDTO {
   serialNumber: string;
   type: string;
@@ -23,7 +24,7 @@ interface CertificateTreeDTO {
 export class ViewCertificateChainComponent implements OnInit {
 
   tree?: CertificateTreeDTO;
-
+  selectedDetails?: any;
   constructor(private certificateService: CertificateService) {}
 
 
@@ -40,4 +41,14 @@ export class ViewCertificateChainComponent implements OnInit {
         }
       });
   }
+
+  selectNode(node: CertificateTreeDTO) {
+    this.certificateService.getCertificateDetails(node.serialNumber)
+      .subscribe({
+        next: (data) => this.selectedDetails = data,
+        error: (err) => (err.error?.message || "Greška pri povlačenju detalja.")
+      });
+  }
+
+
 }

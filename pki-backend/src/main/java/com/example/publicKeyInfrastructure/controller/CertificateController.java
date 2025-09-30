@@ -8,6 +8,7 @@ import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -94,7 +95,7 @@ public class CertificateController {
     @GetMapping("/my-chain")
     public ResponseEntity<?> getMyCertificateChain() {
         try {
-            CertificateTreeDTO tree = certificateService.getCertificateChainForLoggedCA();
+            CertificateTreeDTO tree = certificateService.getCertificateChainForLoggedUser();
             return ResponseEntity.ok(tree);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -104,5 +105,21 @@ public class CertificateController {
                     .body(Map.of("message", "Internal server error"));
         }
     }
+
+
+    @GetMapping("/details/{serialNumber}")
+    public ResponseEntity<?> getCertificateDetails(@PathVariable String serialNumber) {
+        try {
+            CertificateDetailsDTO details = certificateService.getCertificateDetails(serialNumber);
+            return ResponseEntity.ok(details);
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("message", "You are not authorized to view this certificate."));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", e.getMessage()));
+        }
+    }
+
 
 }

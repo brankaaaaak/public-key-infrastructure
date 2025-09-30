@@ -1,0 +1,15 @@
+.certificate-chain {
+  ul { list-style-type: none; padding-left: 20px; }
+  .certificate-node { cursor: pointer; padding: 4px; transition: background-color 0.2s; }
+  .certificate-node:hover { background-color: #f9f5fc; border-radius: 4px; }
+  .revoked { color: red; font-weight: bold; }
+}
+
+.certificate-details {
+  margin-top: 20px;
+  table.user-table {
+    width: auto;
+    margin: 0;
+    td { padding: 6px 12px; }
+  }
+}

@@ -17,4 +17,4 @@ public class CertificateTreeDTO {
     private String ownerEmail;
     private boolean revoked;
     private List<CertificateTreeDTO> children = new ArrayList<>();
-}
+}   

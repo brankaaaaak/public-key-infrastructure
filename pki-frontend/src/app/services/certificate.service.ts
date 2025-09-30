@@ -36,4 +36,7 @@ export class CertificateService {
   getMyCertificateChain(): Observable<any> {
     return this.http.get<any>(`${environment.apiHost}/api/certificate/my-chain`);
   }
+  getCertificateDetails(serialNumber: string): Observable<any> {
+    return this.http.get<any>(`${environment.apiHost}/api/certificate/details/${serialNumber}`);
+  }
 }
