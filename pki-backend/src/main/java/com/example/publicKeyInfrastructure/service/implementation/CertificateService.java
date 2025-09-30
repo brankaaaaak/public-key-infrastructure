@@ -447,35 +447,66 @@ public class CertificateService implements ICertificateService {
         return ekuList;
     }
 
+
     @Override
     public CertificateTreeDTO getCertificateChainForLoggedUser() throws Exception {
         User loggedUser = getLoggedUser();
 
-        // Uzimamo sve sertifikate tog usera
+        boolean isAdmin = loggedUser.getRoles().stream()
+                .anyMatch(role -> "ROLE_ADMIN".equals(role.getName()));
+
+        if (isAdmin) {
+            List<Certificate> roots = certificateRepository.findAllRootCertificates();
+            // Kreiramo virtualni root node i dodajemo sve stvarne root node-ove
+            CertificateTreeDTO virtualRoot = new CertificateTreeDTO(
+                    "ADMIN_ROOT", CertificateType.ROOT, "Admin View", false, new ArrayList<>()
+            );
+            for (Certificate root : roots) {
+                CertificateTreeDTO tree = buildTree(root, new HashSet<>());
+                if (tree != null) virtualRoot.getChildren().add(tree);
+            }
+            return virtualRoot;
+        }
+
+        // Obični korisnik
         List<Certificate> myCerts = certificateRepository.findByOwnerId(loggedUser.getId());
         if (myCerts.isEmpty()) {
             throw new RuntimeException("No certificates found for this user.");
         }
 
-        // Ako je END korisnik -> gradimo chain prema root-u
         Optional<Certificate> endCert = myCerts.stream()
-                .filter(c -> c.getCertificateType().equals(CertificateType.END))
+                .filter(c -> c.getCertificateType() == CertificateType.END)
                 .findFirst();
-
         if (endCert.isPresent()) {
             return buildChainUpwards(endCert.get(), new HashSet<>());
         }
 
-        // Ako je CA (ROOT ili INTERMEDIATE) -> gradimo stablo nadole
         Optional<Certificate> caCert = myCerts.stream()
-                .filter(c -> !c.getCertificateType().equals(CertificateType.END))
+                .filter(c -> c.getCertificateType() != CertificateType.END)
                 .findFirst();
-
         if (caCert.isPresent()) {
             return buildTree(caCert.get(), new HashSet<>());
         }
 
         throw new RuntimeException("Unexpected certificate configuration for this user.");
+    }
+
+
+
+    private CertificateTreeDTO buildAdminTree(List<Certificate> roots) {
+        CertificateTreeDTO virtualRoot = new CertificateTreeDTO();
+        virtualRoot.setSerialNumber("ROOT_ADMIN");
+        virtualRoot.setType(CertificateType.ROOT);
+        virtualRoot.setOwnerEmail("Admin View");
+        virtualRoot.setChildren(new ArrayList<>());
+
+        for (Certificate root : roots) {
+            CertificateTreeDTO tree = buildTree(root, new HashSet<>());
+            if (tree != null) {
+                virtualRoot.getChildren().add(tree);
+            }
+        }
+        return virtualRoot;
     }
 
     private CertificateTreeDTO buildChainUpwards(Certificate cert, Set<String> visited) {
@@ -552,8 +583,11 @@ public class CertificateService implements ICertificateService {
         Certificate cert = certificateRepository.findBySerialNumber(serialNumber)
                 .orElseThrow(() -> new RuntimeException("Certificate not found"));
 
-        if (!cert.getOwner().getId().equals(loggedUser.getId()) &&
-                !loggedUser.getRoles().contains("ROLE_ADMIN")) {
+        // Provera da li je korisnik admin ili vlasnik sertifikata
+        boolean isAdmin = loggedUser.getRoles().stream()
+                .anyMatch(role -> "ROLE_ADMIN".equals(role.getName()));
+
+        if (!cert.getOwner().getId().equals(loggedUser.getId()) && !isAdmin) {
             throw new AccessDeniedException("User not allowed to view this certificate");
         }
 

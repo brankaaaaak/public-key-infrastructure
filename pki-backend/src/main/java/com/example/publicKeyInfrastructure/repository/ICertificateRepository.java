@@ -41,4 +41,6 @@ public interface ICertificateRepository extends JpaRepository<Certificate, Long>
     List<Certificate> findChildrenByIssuerSerialNumber(@Param("issuerSerialNumber") String issuerSerialNumber);
 
     List<Certificate> findByOwnerId(Long ownerId);
+    @Query("SELECT c FROM Certificate c WHERE c.certificateType = 'ROOT'")
+    List<Certificate> findAllRootCertificates();
 }
