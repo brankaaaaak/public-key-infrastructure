@@ -15,7 +15,7 @@ export class UserDownloadComponent {
   constructor(private service: CertificateService) {}
 
   ngOnInit(): void {
-    this.service.getMineEndEntityCertificates().subscribe({
+    this.service.getDownloadTable().subscribe({
       next: (data) => this.requests = data,
       error: (err) => console.error('Failed to fetch requests', err)
     });

@@ -1,5 +1,5 @@
 <div class="requests-container">
-  <h2>My Certificates</h2>
+  <h2>Certificates to download</h2>
 
   <table class="requests-table" *ngIf="requests && requests.length > 0">
     <thead>
@@ -25,7 +25,7 @@
         </td>
         <td>{{ cert.certificateType }}</td>
         <td>
-          <button class="btn-download" (click)="downloadCertificate(cert)" [disabled]="isExpired(cert.validTo)">Download</button>
+          <button class="btn-download" (click)="downloadCertificate(cert)" [disabled]="isExpired(cert.validTo)" title="This certificate is expired">Download</button>
         </td>
       </tr>
     </tbody>
