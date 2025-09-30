@@ -33,6 +33,15 @@ export class CertificateService {
   getPendingRequestsCA(): Observable<any[]> {
     return this.http.get<any[]>(`${environment.apiHost}/api/certificate/ca-requests/pending`);
   }
+  getDownloadTable(): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiHost}/api/certificate/download-table`);
+  }
+  downloadCertificate(requestId: number): Observable<Blob> {
+    const url = `${environment.apiHost}/api/certificate/${requestId}/download`;
+    return this.http.get(url, {
+      responseType: 'blob' 
+    });
+  }
   getCertificates(): Observable<any> {
     return this.http.get<any>(`${environment.apiHost}/api/certificate/all`);
   }

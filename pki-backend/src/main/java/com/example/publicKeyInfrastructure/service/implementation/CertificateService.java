@@ -6,13 +6,11 @@ import com.example.publicKeyInfrastructure.crypto.MasterKeyManager;
 import com.example.publicKeyInfrastructure.data.CertificateIssuer;
 import com.example.publicKeyInfrastructure.data.CertificateSubject;
 import com.example.publicKeyInfrastructure.dto.CertificateDTO;
-import com.example.publicKeyInfrastructure.dto.CertificateRequestViewDTO;
-import com.example.publicKeyInfrastructure.dto.UserDTO;
 import com.example.publicKeyInfrastructure.enumeration.CertificateType;
-import com.example.publicKeyInfrastructure.enumeration.RequestType;
 import com.example.publicKeyInfrastructure.model.*;
 import com.example.publicKeyInfrastructure.model.Certificate;
 import com.example.publicKeyInfrastructure.repository.ICertificateRepository;
+import com.example.publicKeyInfrastructure.repository.ICertificateRequestRepository;
 import com.example.publicKeyInfrastructure.repository.IOrgKeyRepository;
 import com.example.publicKeyInfrastructure.repository.IUserRepository;
 import com.example.publicKeyInfrastructure.service.interfaces.ICertificateService;
@@ -30,7 +28,7 @@ import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.pkcs.PKCS10CertificationRequest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cglib.core.Local;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -38,13 +36,12 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
-import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
+import org.springframework.security.access.AccessDeniedException;
 import java.security.*;
 import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
@@ -67,6 +64,12 @@ public class CertificateService implements ICertificateService {
 
     @Autowired
     private KeystoreManager keystoreManager;
+
+    @Autowired
+    private ICertificateRequestRepository certificateRequestRepository;
+
+    @Value("${KEYSTORE_PASSWORD}")
+    private String keystorePassword;
 
     @Override
     public CertificateDTO createCertificate(CertificateRequest certificateRequest){
@@ -224,6 +227,7 @@ public class CertificateService implements ICertificateService {
                 }
 
                 Certificate certificate = new Certificate(
+                        request,
                         request.getCertificateType(),
                         owner,
                         x509Certificate.getSerialNumber().toString(),
@@ -492,6 +496,7 @@ public class CertificateService implements ICertificateService {
 
         return allCertificates;
     }
+
     private CertificateDTO mapToDTO(Certificate certificate) {
         return new CertificateDTO(certificate);
     }
@@ -556,6 +561,123 @@ public class CertificateService implements ICertificateService {
         }
         return ekuList;
     }
+    @Override
+    public byte[] generateKeystore(Long id) throws Exception {
+        User loggedUser = getLoggedUser();
 
+        Certificate cert = certificateRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Certificate not found for this request"));
+
+        if (cert.getCertificateType() == CertificateType.ROOT) {
+            throw new AccessDeniedException("Root certificates cannot be downloaded.");
+        }
+
+        // ADMIN -> sve dozvoljeno
+        if (loggedUser.getRoles().stream().anyMatch(r -> r.getName().equals("ROLE_ADMIN"))) {
+            return buildKeystore(cert);
+        }
+        // USER -> samo svoje
+        if (loggedUser.getRoles().stream().anyMatch(r -> r.getName().equals("ROLE_USER"))) {
+            if (!cert.getOwner().getId().equals(loggedUser.getId())) {
+                throw new AccessDeniedException("You are not allowed to download this certificate");
+            }
+            return buildKeystore(cert);
+        }
+        // CA -> svoje + koje je potpisao (rekurzivno)
+        if (loggedUser.getRoles().stream().anyMatch(r -> r.getName().equals("ROLE_CA"))) {
+            // da li je vlasnik
+            if (cert.getOwner().getId().equals(loggedUser.getId())) {
+                return buildKeystore(cert);
+            }
+            // ili je u lancu potpisivanja
+            List<Certificate> allowed = new ArrayList<>();
+            List<Certificate> owned = certificateRepository.findAllByOwner(loggedUser);
+            for (Certificate ownedCert : owned) {
+                allowed.addAll(getSignedCertificatesRecursive(ownedCert.getSerialNumber()));
+            }
+            boolean hasRight = allowed.stream().anyMatch(c -> c.getId().equals(cert.getId()));
+            if (!hasRight) {
+                throw new AccessDeniedException("You are not allowed to download this certificate");
+            }
+            return buildKeystore(cert);
+        }
+        throw new AccessDeniedException("Unauthorized role");
+    }
+    private byte[] buildKeystore(Certificate cert) throws Exception {
+        // rekonstrukcija privatnog i javnog
+        OrgKey key = orgKeyRepository.findByOrgId(cert.getOwner().getOrganization().getId());
+        byte[] orgKeyBytes = masterKeyManager.decryptWithRoot(key.getEncryptedKey());
+        SecretKey decryptedOrgKeyIssuer = CryptoUtils.bytesToSecretKey(orgKeyBytes);
+        byte[] decryptedPrivateKeyBytes = CryptoUtils.decryptAES(cert.getEncryptedPrivateKey(), decryptedOrgKeyIssuer);
+        PrivateKey privateKey = CryptoUtils.bytesToPrivateKey(decryptedPrivateKeyBytes);
+
+        PublicKey publicKey = CryptoUtils.bytesToPublicKey(cert.getPublicKey());
+
+        X509Certificate x509 = keystoreManager.readOrgCertificate(cert.getOwner().getOrganization().getId(), cert.getSerialNumber());
+
+        KeyStore downloadKs = KeyStore.getInstance("PKCS12");
+        downloadKs.load(null, keystorePassword.toCharArray());
+
+        downloadKs.setKeyEntry(
+                "cert-" + cert.getSerialNumber(),
+                privateKey,
+                keystorePassword.toCharArray(),
+                new java.security.cert.Certificate[]{x509}
+        );
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        downloadKs.store(bos, keystorePassword.toCharArray());
+
+        return bos.toByteArray();
+    }
+
+
+    @Override
+    public List<CertificateDTO> getMineEECertificates() throws ChangeSetPersister.NotFoundException {
+        User loggedUser = getLoggedUser();
+        List<Certificate> requests = this.certificateRepository.findAllByOwner(loggedUser);
+        return requests.stream()
+                .map(CertificateDTO::new)
+                .collect(Collectors.toList());
+    }
+    @Override
+    public List<CertificateDTO> getDownloadTable() throws ChangeSetPersister.NotFoundException {
+        User loggedUser = getLoggedUser();
+        if (loggedUser.getRoles().stream().anyMatch((r->r.getName().equals("ROLE_CA")))){
+            List<Certificate> owned = certificateRepository.findAllByOwner(loggedUser);
+            List<Certificate> all = new ArrayList<>(owned);
+            for (Certificate cert : owned) {
+                all.addAll(getSignedCertificatesRecursive(cert.getSerialNumber()));
+            }
+            return all.stream()
+                    .distinct() // da ne dođe do duplikata
+                    .map(CertificateDTO::new)
+                    .collect(Collectors.toList());
+        }
+        if (loggedUser.getRoles().stream().anyMatch(r -> r.getName().equals("ROLE_ADMIN"))) {
+            return certificateRepository.findAll()
+                    .stream()
+                    .filter(c -> c.getCertificateType() != CertificateType.ROOT)
+                    .map(CertificateDTO::new)
+                    .collect(Collectors.toList());
+        }
+        if (loggedUser.getRoles().stream().anyMatch(r -> r.getName().equals("ROLE_USER"))) {
+            return certificateRepository.findAllByOwner(loggedUser)
+                    .stream()
+                    .map(CertificateDTO::new)
+                    .collect(Collectors.toList());
+        }
+        throw new ChangeSetPersister.NotFoundException();
+    }
+    private List<Certificate> getSignedCertificatesRecursive(String issuerSerialNumber) {
+        List<Certificate> signed = certificateRepository.findByIssuerSerialNumber(issuerSerialNumber);
+        List<Certificate> result = new ArrayList<>(signed);
+
+        for (Certificate cert : signed) {
+            result.addAll(getSignedCertificatesRecursive(cert.getSerialNumber()));
+        }
+
+        return result;
+    }
 
 }

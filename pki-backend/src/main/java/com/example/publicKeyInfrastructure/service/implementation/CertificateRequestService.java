@@ -21,7 +21,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class CertificateRequestService implements ICertificateRequestService {
@@ -65,8 +67,8 @@ public class CertificateRequestService implements ICertificateRequestService {
         newRequest.setSubject(subject);
         if(isAdmin){
             newRequest.setRequestType(RequestType.ACCEPTED);
-            certificateService.createCertificate(newRequest);
             newRequest = certificateRequestRepository.save(newRequest);
+            certificateService.createCertificate(newRequest);
         }
         else if(isCAUser) {
             if(newRequest.getCertificateType()==CertificateType.INTERMEDIATE || newRequest.getCertificateType()==CertificateType.END)
@@ -135,4 +137,12 @@ public class CertificateRequestService implements ICertificateRequestService {
         return new CertificateRequestViewDTO(request);
     }
 
+    @Override
+    public List<CertificateRequestViewDTO> getMineEECertificatesRequests() throws ChangeSetPersister.NotFoundException {
+        User loggedUser = getLoggedUser();
+        List<CertificateRequest> requests = this.certificateRequestRepository.findAllBySubjectAndCertificateType(loggedUser, CertificateType.END);
+        return requests.stream()
+                .map(CertificateRequestViewDTO::new)
+                .collect(Collectors.toList());
+    }
 }

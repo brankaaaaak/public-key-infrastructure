@@ -4,8 +4,6 @@ import com.example.publicKeyInfrastructure.dto.CertificateDTO;
 import com.example.publicKeyInfrastructure.model.CertificateRequest;
 import org.springframework.data.crossstore.ChangeSetPersister;
 
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.util.List;
 
 public interface ICertificateService {
@@ -13,6 +11,10 @@ public interface ICertificateService {
     public Boolean checkingValidation(String serialNumber) throws ChangeSetPersister.NotFoundException;
     List<CertificateDTO> getValidIntermediateCertificatesByOrganization() throws Exception;
     public CertificateDTO getValidRootCertificate();
+    public byte[] generateKeystore(Long id) throws Exception;
+    List<CertificateDTO> getMineEECertificates() throws ChangeSetPersister.NotFoundException;
+
     public List<CertificateDTO> getAllValidCertificates() ;
     public List<CertificateDTO> getAllValidCertificatesWithoutRoot() ;
+    public List<CertificateDTO> getDownloadTable() throws ChangeSetPersister.NotFoundException;
 }
