@@ -93,15 +93,13 @@ public class CertificateController {
         CertificateRequestViewDTO dto = requestService.denyRequest(id, reason);
         return ResponseEntity.ok(dto);
     }
-    @GetMapping("/requests/mine-ee")
-    public ResponseEntity<List<CertificateRequestViewDTO>> getMineEndEntityCertificatesRequessts() throws ChangeSetPersister.NotFoundException {
-        return ResponseEntity.ok(requestService.getMineEECertificatesRequests());
-    }
-    @GetMapping("/mine-ee")
-    public ResponseEntity<List<CertificateDTO>> getMineEndEntityCertificates() throws ChangeSetPersister.NotFoundException {
-        return ResponseEntity.ok(certificateService.getMineEECertificates());
+    @GetMapping("/download-table")
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CA') or hasRole('ROLE_USER')")
+    public ResponseEntity<List<CertificateDTO>> getDownloadTable() throws ChangeSetPersister.NotFoundException {
+        return ResponseEntity.ok(certificateService.getDownloadTable());
     }
     @GetMapping("/{id}/download")
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CA') or hasRole('ROLE_USER')")
     public ResponseEntity<byte[]> downloadCertificate(@PathVariable Long id) throws Exception {
         byte[] resource = certificateService.generateKeystore(id);
 

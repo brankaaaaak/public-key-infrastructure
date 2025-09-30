@@ -1,12 +1,9 @@
 package com.example.publicKeyInfrastructure.service.interfaces;
 
 import com.example.publicKeyInfrastructure.dto.CertificateDTO;
-import com.example.publicKeyInfrastructure.dto.CertificateRequestViewDTO;
 import com.example.publicKeyInfrastructure.model.CertificateRequest;
 import org.springframework.data.crossstore.ChangeSetPersister;
 
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.util.List;
 
 public interface ICertificateService {
@@ -19,4 +16,5 @@ public interface ICertificateService {
 
     public List<CertificateDTO> getAllValidCertificates() ;
     public List<CertificateDTO> getAllValidCertificatesWithoutRoot() ;
+    public List<CertificateDTO> getDownloadTable() throws ChangeSetPersister.NotFoundException;
 }
