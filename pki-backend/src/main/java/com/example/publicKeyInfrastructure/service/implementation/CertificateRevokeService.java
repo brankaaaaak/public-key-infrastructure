@@ -73,14 +73,14 @@ public class CertificateRevokeService implements ICertificateRevokeService {
     private Map<String, X509CRL> crlCache = new HashMap<>();
 
     // Generiše CRL za dati CA
-    public X509CRL generateCRL(String caIdentifier,boolean isRoot) throws Exception {
+    public X509CRL generateCRL(String caIdentifier,boolean isRoot,String alias) throws Exception {
         CertificateIssuer issuer = isRoot ?
-                keystoreManager.readRootIssuer(caIdentifier) :
-                keystoreManager.readOrgIssuer(Long.parseLong(caIdentifier.split("_")[1]), caIdentifier);
+                keystoreManager.readRootIssuer(alias) :
+                keystoreManager.readOrgIssuer(Long.parseLong(caIdentifier.split("_")[1]), alias);
 
         X509Certificate caCert = isRoot ?
-                keystoreManager.readRootCertificate(caIdentifier) :
-                keystoreManager.readOrgCertificate(Long.parseLong(caIdentifier.split("_")[1]), caIdentifier);
+                keystoreManager.readRootCertificate(alias) :
+                keystoreManager.readOrgCertificate(Long.parseLong(caIdentifier.split("_")[1]), alias);
 
         PrivateKey caPrivateKey = issuer.getPrivateKey();
 
@@ -124,8 +124,8 @@ public class CertificateRevokeService implements ICertificateRevokeService {
     }
 
 
-    public byte[] getCRLBytes(String caIdentifier,boolean isRoot) throws Exception {
-        X509CRL crl = crlCache.getOrDefault(caIdentifier, generateCRL(caIdentifier,isRoot));
+    public byte[] getCRLBytes(String caIdentifier,boolean isRoot,String alias) throws Exception {
+        X509CRL crl = crlCache.getOrDefault(caIdentifier, generateCRL(caIdentifier,isRoot,alias));
         return crl.getEncoded();
     }
 }

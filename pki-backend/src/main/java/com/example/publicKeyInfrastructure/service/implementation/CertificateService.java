@@ -444,7 +444,7 @@ public class CertificateService implements ICertificateService {
             String crlUrl = getCRLUrl(certType,org);
 
             DistributionPointName distPointName = new DistributionPointName(
-                    new GeneralNames(new GeneralName(GeneralName.uniformResourceIdentifier, crlUrl))
+                    new GeneralNames(new GeneralName(GeneralName.uniformResourceIdentifier, crlUrl+"/"+subject.getSerialNumber()))
             );
 
             DistributionPoint distPoint = new DistributionPoint(distPointName, null, null);
