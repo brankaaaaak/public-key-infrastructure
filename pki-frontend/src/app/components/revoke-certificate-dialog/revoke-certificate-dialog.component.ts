@@ -38,9 +38,15 @@ export class RevokeCertificateDialogComponent {
     @Inject(MAT_DIALOG_DATA) public data: any
   ) {}
 
-  confirm() {
-    this.dialogRef.close(this.selectedReason);
+ confirm() {
+  if (!this.selectedReason) {
+    alert('Please select a reason before revoking!');
+    return; 
   }
+
+  this.dialogRef.close(this.selectedReason);
+}
+
 
   cancel() {
     this.dialogRef.close(null);

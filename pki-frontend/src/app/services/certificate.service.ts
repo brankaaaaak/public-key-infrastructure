@@ -48,4 +48,12 @@ export class CertificateService {
   getCertificatesWithoutRoot(): Observable<any> {
     return this.http.get<any>(`${environment.apiHost}/api/certificate/all-without-root`);
   }
+  revokeCertificate(certId: string, reason: string): Observable<string> {
+  return this.http.put(
+    `${environment.apiHost}/api/certificate/${certId}/revoke?reason=${reason}`,
+    null,
+    { responseType: 'text' }
+  );
+}
+
 }

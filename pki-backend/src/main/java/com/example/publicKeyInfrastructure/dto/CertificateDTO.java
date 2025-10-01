@@ -21,6 +21,7 @@ public class CertificateDTO {
     private OrganizationDTO organization;
     private Date validFrom;
     private Date validTo;
+    private boolean revoked;
     public CertificateDTO(Certificate certificate){
         this.id=certificate.getId();
         this.certificateType=certificate.getCertificateType();
@@ -32,6 +33,7 @@ public class CertificateDTO {
             this.organization=null;
         this.validFrom=certificate.getValidFrom();
         this.validTo=certificate.getValidTo();
+        this.revoked=certificate.isRevoked();
     }
 
 }

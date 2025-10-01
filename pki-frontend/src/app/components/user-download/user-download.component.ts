@@ -4,6 +4,7 @@ import { CommonModule, NgIf } from '@angular/common';
 import { RevokeCertificateDialogComponent } from '../revoke-certificate-dialog/revoke-certificate-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
 import { MatTooltip } from '@angular/material/tooltip';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-user-download',
@@ -15,7 +16,7 @@ import { MatTooltip } from '@angular/material/tooltip';
 export class UserDownloadComponent {
   requests: any[] = [];
 
-  constructor(private service: CertificateService,private dialog: MatDialog) {}
+  constructor(private service: CertificateService,private dialog: MatDialog,private snackBar:MatSnackBar) {}
 
   ngOnInit(): void {
     this.service.getDownloadTable().subscribe({
@@ -61,18 +62,33 @@ getDisableReason(cert: any,action:string): string {
   return action;
 }
 
-  revokeCertificate(certId: number) {
+  revokeCertificate(cert:any) {
     const dialogRef = this.dialog.open(RevokeCertificateDialogComponent, {
       width: '400px',
-      data: { certId }
+      data: { cert }
     });
 
-    dialogRef.afterClosed().subscribe(reason => {
-      if (reason) {
-        // ovde backend da zove revocation
-        console.log(`Revoking cert ${certId} with reason: ${reason}`);
-        // npr. this.certService.revoke(certId, reason).subscribe(...)
-      }
-  });
-  }
+      dialogRef.afterClosed().subscribe(reason => {
+        if (reason) {
+          this.service.revokeCertificate(cert.serialNumber, reason).subscribe({
+            next: (message: string) => {
+              this.snackBar.open(message, 'Close', {
+                duration: 4000,
+                panelClass: ['snackbar-success']
+              });
+              this.service.getDownloadTable().subscribe({
+                next: (data) => this.requests = data,
+                error: (err) => console.error('Failed to fetch requests', err)
+              });
+            },
+            error: () => {
+              this.snackBar.open('Error revoking certificate!', 'Close', {
+                duration: 4000,
+                panelClass: ['snackbar-error']
+              });
+            }
+          });
+        }
+      });
+    }
 }
