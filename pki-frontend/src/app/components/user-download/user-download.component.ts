@@ -3,11 +3,12 @@ import { CertificateService } from '../../services/certificate.service';
 import { CommonModule, NgIf } from '@angular/common';
 import { RevokeCertificateDialogComponent } from '../revoke-certificate-dialog/revoke-certificate-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
+import { MatTooltip } from '@angular/material/tooltip';
 
 @Component({
   selector: 'app-user-download',
   standalone: true,
-  imports: [NgIf, CommonModule],
+  imports: [NgIf, CommonModule,MatTooltip],
   templateUrl: './user-download.component.html',
   styleUrl: './user-download.component.scss'
 })
@@ -42,6 +43,24 @@ export class UserDownloadComponent {
   isExpired(validTo: Date | string): boolean {
     return new Date(validTo) < new Date();
   }
+
+isRevoked(cert: any): boolean {
+  return cert.revoked === true;
+}
+isExpiredOrRevoked(cert: any): boolean {
+  return this.isExpired(cert.validTo) || this.isRevoked(cert);
+}
+
+getDisableReason(cert: any,action:string): string {
+  if (this.isRevoked(cert)) {
+    return 'This certificate has been revoked';
+  }
+  if (this.isExpired(cert)) {
+    return 'This certificate has expired';
+  }
+  return action;
+}
+
   revokeCertificate(certId: number) {
     const dialogRef = this.dialog.open(RevokeCertificateDialogComponent, {
       width: '400px',
