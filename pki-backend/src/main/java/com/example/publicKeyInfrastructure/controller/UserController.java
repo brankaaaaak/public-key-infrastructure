@@ -76,14 +76,20 @@ public class UserController {
     }
     @GetMapping("/all-org/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<List<UserTableViewDTO>> getAllUsersForOrg(@PathVariable("id") Long orgId) {
+    public ResponseEntity<List<UserTableViewDTO>> getAllCAUsersForOrg(@PathVariable("id") Long orgId) {
         List<UserTableViewDTO> users =service.getUsersForOrganization(orgId);
         return ResponseEntity.ok(users);
     }
     @GetMapping("/all")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<List<UserTableViewDTO>> getAllUsers() {
+    public ResponseEntity<List<UserTableViewDTO>> getAllCAUsers() {
         List<UserTableViewDTO> users =service.getAllUsers();
+        return ResponseEntity.ok(users);
+    }
+    @GetMapping("/all-org/role-user/{id}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<List<UserTableViewDTO>> getAllUsersForOrg(@PathVariable("id") Long orgId) {
+        List<UserTableViewDTO> users =service.getAllUsersForOrganization(orgId);
         return ResponseEntity.ok(users);
     }
 }

@@ -12,8 +12,12 @@ public interface IUserRepository extends JpaRepository<User, Long> {
     boolean existsByEmail(String email);
     Optional<User> findByEmail(String email);
     @Query("SELECT u FROM User u JOIN u.roles r LEFT JOIN FETCH u.organization " +
-            "WHERE u.enabled = true AND r.name <> 'ROLE_ADMIN'")
-    List<User> findAllEnabledUsers();
+            "WHERE u.enabled = true AND r.name <> 'ROLE_ADMIN' AND r.name <> 'ROLE_USER'")
+    List<User> findAllEnabledCAUsers();
+
+    @Query("SELECT u FROM User u JOIN u.roles r LEFT JOIN FETCH u.organization " +
+            "WHERE u.enabled = true AND r.name <> 'ROLE_ADMIN' AND r.name <> 'ROLE_USER' AND u.organization.id = :orgId")
+    List<User> findAllEnabledCAUsersByOrganization(@Param("orgId") Long orgId);
 
     @Query("SELECT u FROM User u JOIN u.roles r LEFT JOIN FETCH u.organization " +
             "WHERE u.enabled = true AND r.name <> 'ROLE_ADMIN' AND u.organization.id = :orgId")

@@ -47,7 +47,7 @@ successMessage = '';
 
     if (issuer.certificateType === 'ROOT') {
       // Root -> svi korisnici
-      this.userService.getAllUsers().subscribe({
+      this.userService.getAllCAUsers().subscribe({
         next: (data) => this.users = data,
         error: (err) => console.error('Error fetching users', err)
       });
@@ -55,7 +55,7 @@ successMessage = '';
       // Intermediate -> samo korisnici te organizacije
       const orgId = issuer.organization?.id;
       if (orgId) {
-        this.userService.getUsersByOrganization(orgId).subscribe({
+        this.userService.getCAUsersByOrganization(orgId).subscribe({
           next: (data) => this.users = data,
           error: (err) => console.error('Error fetching users for org', err)
         });
@@ -118,6 +118,9 @@ successMessage = '';
       next: (response) => {
         this.successMessage = 'Intermediate certificate created successfully!';
         this.errorMessage = '';
+        this.loadCertificates();
+        this.selectedIssuerSerialNumber=null;
+        this.users = [];
       },
       error: (error) => {
         this.errorMessage = 'An error occurred: ' + error.error?.message || error.message;

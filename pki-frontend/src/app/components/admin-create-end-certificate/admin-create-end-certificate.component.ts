@@ -34,12 +34,7 @@ successMessage = '';
     });
   }
 
-  private loadUsers(): void {
-    this.userService.getAllUsers().subscribe({
-      next: (data) => this.users = data,
-      error: (err) => console.error('Error fetching users', err)
-    });
-  }
+  
   keyUsageOptions = [
     'DIGITAL SIGNATURE',
     'NON REPUDIATION',
@@ -184,6 +179,9 @@ onIssuerChange(): void {
       next: (response) => {
         this.successMessage = 'End Entity certificate created successfully!';
         this.errorMessage = '';
+        this.loadCertificates();
+        this.selectedIssuerSerialNumber
+        this.users = [];
       },
       error: (error) => {
         this.errorMessage = 'An error occurred: ' + error.error?.message || error.message;

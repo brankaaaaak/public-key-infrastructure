@@ -119,7 +119,8 @@ public class CertificateRevokeService implements ICertificateRevokeService {
             case "cessationOfOperation" -> CRLReason.cessationOfOperation;
             case "certificateHold" -> CRLReason.certificateHold;
             case "privilegeWithdrawn" -> CRLReason.privilegeWithdrawn;
-            case "aACompromise" -> CRLReason.aACompromise;
+            case "AACompromise" -> CRLReason.aACompromise;
+            case "removeFromCRL" -> CRLReason.removeFromCRL;
             default -> CRLReason.unspecified;
         };
     }

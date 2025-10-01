@@ -12,4 +12,5 @@ public interface IUserService {
 
     List<UserTableViewDTO> getAllUsers();
     List<UserTableViewDTO> getUsersForOrganization(Long id);
+    public List<UserTableViewDTO> getAllUsersForOrganization(Long id);
 }
