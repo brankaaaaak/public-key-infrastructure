@@ -122,6 +122,14 @@ public class UserService implements IUserService{
     }
 
     @Override
+    public List<UserTableViewDTO> getAllCAUsers() {
+        return userRepository.findAllEnabledCAUsers().stream()
+                .map(u -> {
+                    UserTableViewDTO dto = new UserTableViewDTO(u);
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
 
     public List<UserWithRoleDTO> getAllUsers() {
         return userRepository.findAll()
@@ -161,10 +169,18 @@ public class UserService implements IUserService{
         userRepository.save(user);
 
         return new UserDTO(user);
-
-
+    }
     @Override
     public List<UserTableViewDTO> getUsersForOrganization(Long id) {
+        return userRepository.findAllEnabledCAUsersByOrganization(id).stream()
+                .map(u -> {
+                    UserTableViewDTO dto = new UserTableViewDTO(u);
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+    @Override
+    public List<UserTableViewDTO> getAllUsersForOrganization(Long id) {
         return userRepository.findAllEnabledUsersByOrganization(id).stream()
                 .map(u -> {
                     UserTableViewDTO dto = new UserTableViewDTO(u);

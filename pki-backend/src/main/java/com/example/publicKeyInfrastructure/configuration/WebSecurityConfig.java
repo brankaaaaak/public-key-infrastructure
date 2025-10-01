@@ -65,7 +65,8 @@ public class WebSecurityConfig {
                                 "/api/users/verify-email",
                                 "/api/users/login",
                                 "/api/users/refresh-token",
-                                "/api/organization/names")
+                                "/api/organization/names",
+                                "/api/crl/**")
                         .permitAll()
                         .anyRequest().authenticated()
                 )

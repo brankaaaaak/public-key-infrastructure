@@ -173,7 +173,8 @@ public class CertificateService implements ICertificateService {
             X509Certificate signedCert = createCertificateContent(
                     subject,
                     certificateIssuer,
-                    certificateRequest.getCertificateType()
+                    certificateRequest.getCertificateType(),
+                    certificateRequest.getSubject().getOrganization()
             );
             // 5. Sačuvaj sertifikat u bazi (bez privatnog ključa)
             saveCertificateToDb(certificateRequest, subject, certificateIssuer, null);
@@ -192,7 +193,7 @@ public class CertificateService implements ICertificateService {
             CertificateIssuer issuer,
             byte[] encryptedPrivateKey) {
             try {
-                X509Certificate x509Certificate = createCertificateContent(subject, issuer, request.getCertificateType());
+                X509Certificate x509Certificate = createCertificateContent(subject, issuer, request.getCertificateType(),request.getSubject().getOrganization());
 
                 // Root sertifikat nema issuer u bazi
                 Certificate issuerCert = null;
@@ -402,7 +403,7 @@ public class CertificateService implements ICertificateService {
         builder.addRDN(BCStyle.UID, user.getId().toString());
         return builder.build();
     }
-    private X509Certificate createCertificateContent(CertificateSubject subject, CertificateIssuer issuer, CertificateType certType) throws OperatorCreationException, CertIOException, CertificateException, NoSuchAlgorithmException, SignatureException, InvalidKeyException, NoSuchProviderException {
+    private X509Certificate createCertificateContent(CertificateSubject subject, CertificateIssuer issuer, CertificateType certType,Organization org) throws OperatorCreationException, CertIOException, CertificateException, NoSuchAlgorithmException, SignatureException, InvalidKeyException, NoSuchProviderException {
         ContentSigner contentSigner = new JcaContentSignerBuilder("SHA256WithRSAEncryption")
                 .setProvider("BC")
                 .build(issuer.getPrivateKey());
@@ -448,7 +449,23 @@ public class CertificateService implements ICertificateService {
             default:
                 throw new IllegalArgumentException("Unknown cert type");
         }
+        try {
+            if(certType==CertificateType.INTERMEDIATE || certType==CertificateType.ROOT)
+            {
+                String crlUrl = getCRLUrl(certType,org,subject.getSerialNumber());
 
+                DistributionPointName distPointName = new DistributionPointName(
+                        new GeneralNames(new GeneralName(GeneralName.uniformResourceIdentifier, crlUrl))
+                );
+
+                DistributionPoint distPoint = new DistributionPoint(distPointName, null, null);
+                CRLDistPoint crlDistPoints = new CRLDistPoint(new DistributionPoint[]{distPoint});
+
+                certBuilder.addExtension(Extension.cRLDistributionPoints, false, crlDistPoints);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         X509CertificateHolder certHolder = certBuilder.build(contentSigner);
         X509Certificate certificate = new JcaX509CertificateConverter()
                 .setProvider("BC")
@@ -459,6 +476,17 @@ public class CertificateService implements ICertificateService {
 
         return certificate;
     }
+    private String getCRLUrl(CertificateType certType,Organization org,String serialNumber) throws ChangeSetPersister.NotFoundException {
+        String baseUrl = "https://localhost:8443/api/crl";
+        // primer: root, intermediate po organizaciji
+        if (certType == CertificateType.ROOT && org==null) {
+            return baseUrl+"/0/"+serialNumber;
+        } else  {
+            // možeš koristiti serialNumber organizacije ili issuer
+            return baseUrl+"/" + org.getId()+"/"+serialNumber;
+        }
+    }
+
     private User getLoggedUser() throws ChangeSetPersister.NotFoundException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
@@ -577,6 +605,14 @@ public class CertificateService implements ICertificateService {
         Certificate cert = certificateRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Certificate not found for this request"));
 
+        if (cert.isRevoked()) {
+            throw new IllegalStateException("Certificate has been revoked and cannot be downloaded.");
+        }
+        Date now = new Date();
+        if (now.before(cert.getValidFrom()) || now.after(cert.getValidTo())) {
+            throw new IllegalStateException("Certificate is expired and cannot be downloaded.");
+        }
+
         if (cert.getCertificateType() == CertificateType.ROOT) {
             throw new AccessDeniedException("Root certificates cannot be downloaded.");
         }
@@ -679,7 +715,7 @@ public class CertificateService implements ICertificateService {
         throw new ChangeSetPersister.NotFoundException();
     }
     private List<Certificate> getSignedCertificatesRecursive(String issuerSerialNumber) {
-        List<Certificate> signed = certificateRepository.findByIssuerSerialNumber(issuerSerialNumber);
+        List<Certificate> signed = certificateRepository.findAllByIssuerSerialNumber(issuerSerialNumber);
         List<Certificate> result = new ArrayList<>(signed);
 
         for (Certificate cert : signed) {

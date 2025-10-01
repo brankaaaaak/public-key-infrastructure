@@ -2,6 +2,7 @@ package com.example.publicKeyInfrastructure.controller;
 
 import com.example.publicKeyInfrastructure.dto.*;
 import com.example.publicKeyInfrastructure.service.interfaces.ICertificateRequestService;
+import com.example.publicKeyInfrastructure.service.interfaces.ICertificateRevokeService;
 import com.example.publicKeyInfrastructure.service.interfaces.ICertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.crossstore.ChangeSetPersister;
@@ -28,6 +29,9 @@ public class CertificateController {
 
     @Autowired
     private ICertificateService certificateService;
+
+    @Autowired
+    private ICertificateRevokeService certificateRevokeService;
 
     @PostMapping(value="/request", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<CertificateRequestDTO> createRequest(@RequestBody CreateCertificateRequestDTO dto) throws Exception {
@@ -150,5 +154,12 @@ public class CertificateController {
         List<CertificateDTO> certificates = certificateService.getAllValidCertificatesWithoutRoot();
         return ResponseEntity.ok(certificates);
     }
-
+    @PutMapping("/{serialNumber}/revoke")
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CA') or hasRole('ROLE_USER')")
+    public ResponseEntity<String> revokeCertificate(
+            @PathVariable String serialNumber,
+            @RequestParam String reason) {
+        certificateRevokeService.revokeCertificateAndDescendants(serialNumber, reason);
+        return ResponseEntity.ok("Certificate " + serialNumber + " and all descendants revoked.");
+    }
 }

@@ -25,7 +25,20 @@
         </td>
         <td>{{ cert.certificateType }}</td>
         <td>
-          <button class="btn-download" (click)="downloadCertificate(cert)" [disabled]="isExpired(cert.validTo)" title="This certificate is expired">Download</button>
+           <button class="btn-download"
+                mat-raised-button color="warn"
+                (click)="downloadCertificate(cert)"
+                [disabled]="isExpiredOrRevoked(cert)"
+                [matTooltip]="getDisableReason(cert,'Download')">
+          Download
+        </button>
+           <button class="btn-download"
+                mat-raised-button color="warn"
+                (click)="revokeCertificate(cert)"
+                [disabled]="isExpiredOrRevoked(cert)"
+                [matTooltip]="getDisableReason(cert,'Revoke')">
+          Revoke
+        </button>
         </td>
       </tr>
     </tbody>

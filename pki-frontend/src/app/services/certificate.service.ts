@@ -39,7 +39,7 @@ export class CertificateService {
   }
   getCertificateDetails(serialNumber: string): Observable<any> {
     return this.http.get<any>(`${environment.apiHost}/api/certificate/details/${serialNumber}`);
-
+  }
   getDownloadTable(): Observable<any[]> {
     return this.http.get<any[]>(`${environment.apiHost}/api/certificate/download-table`);
   }
@@ -56,4 +56,12 @@ export class CertificateService {
     return this.http.get<any>(`${environment.apiHost}/api/certificate/all-without-root`);
 
   }
+  revokeCertificate(certId: string, reason: string): Observable<string> {
+  return this.http.put(
+    `${environment.apiHost}/api/certificate/${certId}/revoke?reason=${reason}`,
+    null,
+    { responseType: 'text' }
+  );
+}
+
 }
