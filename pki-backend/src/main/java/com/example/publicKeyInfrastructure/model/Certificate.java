@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Type;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Entity
@@ -54,6 +55,9 @@ public class Certificate {
 
     @Column(name = "revocation_reason")
     private String revocationReason;
+
+    @Column(name = "revocation_date",nullable = true)
+    private LocalDateTime revocationDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organization_id", nullable = true)

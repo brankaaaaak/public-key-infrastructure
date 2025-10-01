@@ -51,4 +51,7 @@ public interface ICertificateRepository extends JpaRepository<Certificate, Long>
             "AND c.revoked = false " +
             "AND CURRENT_TIMESTAMP BETWEEN c.validFrom AND c.validTo")
     List<Certificate> findValidIntermediate();
+    @Query("SELECT c FROM Certificate c " +
+            "WHERE c.revoked = true AND c.issuerSerialNumber = :caSerialNumber")
+    List<Certificate> findRevokedByIssuer(@Param("caSerialNumber") String caSerialNumber);
 }
