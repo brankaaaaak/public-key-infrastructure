@@ -95,7 +95,7 @@ public class CertificateController {
     @GetMapping("/my-chain")
     public ResponseEntity<?> getMyCertificateChain() {
         try {
-            CertificateTreeDTO tree = certificateService.getCertificateChainForLoggedUser();
+            List<CertificateTreeDTO> tree = certificateService.getCertificateChainForLoggedUser();
             return ResponseEntity.ok(tree);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)

@@ -449,7 +449,7 @@ public class CertificateService implements ICertificateService {
 
 
     @Override
-    public CertificateTreeDTO getCertificateChainForLoggedUser() throws Exception {
+    public List<CertificateTreeDTO> getCertificateChainForLoggedUser() throws Exception {
         User loggedUser = getLoggedUser();
 
         boolean isAdmin = loggedUser.getRoles().stream()
@@ -457,93 +457,41 @@ public class CertificateService implements ICertificateService {
 
         if (isAdmin) {
             List<Certificate> roots = certificateRepository.findAllRootCertificates();
-            // Kreiramo virtualni root node i dodajemo sve stvarne root node-ove
-            CertificateTreeDTO virtualRoot = new CertificateTreeDTO(
-                    "ADMIN_ROOT", CertificateType.ROOT, "Admin View", false, new ArrayList<>()
-            );
+            List<CertificateTreeDTO> result = new ArrayList<>();
             for (Certificate root : roots) {
                 CertificateTreeDTO tree = buildTree(root, new HashSet<>());
-                if (tree != null) virtualRoot.getChildren().add(tree);
+                if (tree != null) result.add(tree);
             }
-            return virtualRoot;
+            return result; // admin i dalje dobija celo stablo
         }
 
-        // Obični korisnik
+        // običan user ili CA user
         List<Certificate> myCerts = certificateRepository.findByOwnerId(loggedUser.getId());
         if (myCerts.isEmpty()) {
             throw new RuntimeException("No certificates found for this user.");
         }
 
-        Optional<Certificate> endCert = myCerts.stream()
-                .filter(c -> c.getCertificateType() == CertificateType.END)
-                .findFirst();
-        if (endCert.isPresent()) {
-            return buildChainUpwards(endCert.get(), new HashSet<>());
-        }
+        // skup svih mojih serijskih brojeva
+        Set<String> mySerials = myCerts.stream()
+                .map(Certificate::getSerialNumber)
+                .collect(Collectors.toSet());
 
-        Optional<Certificate> caCert = myCerts.stream()
-                .filter(c -> c.getCertificateType() != CertificateType.END)
-                .findFirst();
-        if (caCert.isPresent()) {
-            return buildTree(caCert.get(), new HashSet<>());
-        }
-
-        throw new RuntimeException("Unexpected certificate configuration for this user.");
-    }
-
-
-
-    private CertificateTreeDTO buildAdminTree(List<Certificate> roots) {
-        CertificateTreeDTO virtualRoot = new CertificateTreeDTO();
-        virtualRoot.setSerialNumber("ROOT_ADMIN");
-        virtualRoot.setType(CertificateType.ROOT);
-        virtualRoot.setOwnerEmail("Admin View");
-        virtualRoot.setChildren(new ArrayList<>());
+        // uzimamo sve root-ove i gradimo celo stablo
+        List<Certificate> roots = certificateRepository.findAllRootCertificates();
+        List<CertificateTreeDTO> result = new ArrayList<>();
 
         for (Certificate root : roots) {
-            CertificateTreeDTO tree = buildTree(root, new HashSet<>());
-            if (tree != null) {
-                virtualRoot.getChildren().add(tree);
+            CertificateTreeDTO fullTree = buildTree(root, new HashSet<>());
+            CertificateTreeDTO filtered = filterTreeForUser(fullTree, mySerials);
+            if (filtered != null) {
+                result.add(filtered);
             }
         }
-        return virtualRoot;
-    }
 
-    private CertificateTreeDTO buildChainUpwards(Certificate cert, Set<String> visited) {
-        if (visited.contains(cert.getSerialNumber())) {
-            return null;
-        }
-        visited.add(cert.getSerialNumber());
-
-        final CertificateTreeDTO[] dto = {new CertificateTreeDTO(
-                cert.getSerialNumber(),
-                cert.getCertificateType(),
-                cert.getOwner().getEmail(),
-                cert.isRevoked(),
-                new ArrayList<>()
-        )};
-
-        // ako nije root -> tražimo issuer-a
-        if (!cert.getSerialNumber().equals(cert.getIssuerSerialNumber())) {
-            certificateRepository.findBySerialNumber(cert.getIssuerSerialNumber())
-                    .ifPresent(issuer -> {
-                        CertificateTreeDTO issuerDto = buildChainUpwards(issuer, visited);
-                        if (issuerDto != null) {
-                            // dodajemo issuer-a kao roditelja, ne kao child
-                            issuerDto.getChildren().add(dto[0]);
-                            dto[0] = issuerDto; // pomeramo root reference
-                        }
-                    });
-        }
-
-        return dto[0];
+        return result;
     }
 
 
-
-    private CertificateTreeDTO buildTree(Certificate cert) {
-        return buildTree(cert, new HashSet<>());
-    }
 
     private CertificateTreeDTO buildTree(Certificate cert, Set<String> visited) {
         if (visited.contains(cert.getSerialNumber())) {
@@ -570,6 +518,26 @@ public class CertificateService implements ICertificateService {
 
         return dto;
     }
+
+    private CertificateTreeDTO filterTreeForUser(CertificateTreeDTO root, Set<String> myCertSerials) {
+        // ako je ovaj čvor jedan od mojih ili ima decu koja su moja, zadržavamo ga
+        List<CertificateTreeDTO> filteredChildren = new ArrayList<>();
+        for (CertificateTreeDTO child : root.getChildren()) {
+            CertificateTreeDTO filteredChild = filterTreeForUser(child, myCertSerials);
+            if (filteredChild != null) {
+                filteredChildren.add(filteredChild);
+            }
+        }
+
+        boolean isMine = myCertSerials.contains(root.getSerialNumber());
+        if (isMine || !filteredChildren.isEmpty() || root.getType() == CertificateType.ROOT) {
+            root.setChildren(filteredChildren);
+            return root;
+        }
+
+        return null; // brišemo granu ako nije moja i nema moje dece
+    }
+
 
     @Override
     public CertificateDetailsDTO getCertificateDetails(String serialNumber) {

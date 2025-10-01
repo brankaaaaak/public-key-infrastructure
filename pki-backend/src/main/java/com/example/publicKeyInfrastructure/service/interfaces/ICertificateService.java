@@ -17,7 +17,7 @@ public interface ICertificateService {
     public CertificateDTO getValidRootCertificate();
 
 
-    CertificateTreeDTO getCertificateChainForLoggedUser() throws Exception;
+    List<CertificateTreeDTO> getCertificateChainForLoggedUser() throws Exception;
 
     CertificateDetailsDTO getCertificateDetails(String serialNumber) ;
 }
