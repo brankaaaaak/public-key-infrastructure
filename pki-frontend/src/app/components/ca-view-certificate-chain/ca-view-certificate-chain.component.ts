@@ -23,7 +23,7 @@ interface CertificateTreeDTO {
 })
 export class ViewCertificateChainComponent implements OnInit {
 
-  tree?: CertificateTreeDTO;
+  tree?: CertificateTreeDTO[];
   selectedDetails?: any;
   constructor(private certificateService: CertificateService) {}
 
@@ -32,23 +32,37 @@ export class ViewCertificateChainComponent implements OnInit {
     this.certificateService.getMyCertificateChain()
       .subscribe({
         next: (data) => {
-          this.tree = data;
-          console.log("Chain podaci:", data);
+          this.tree = data; // sad je niz
+          console.log("Chains:", data);
         },
         error: (err) => {
-          console.error("Greška pri povlačenju chain-a:", err);
-          alert(err.error?.message || "Došlo je do greške.");
+          console.error("Error:", err);
+          alert(err.error?.message || "Error.");
         }
       });
   }
 
-  selectNode(node: CertificateTreeDTO) {
+
+
+  selectNode(node: any, event: MouseEvent): void {
+    event.stopPropagation();
+
+    console.log("Selected certificate:", node.serialNumber);
+
     this.certificateService.getCertificateDetails(node.serialNumber)
       .subscribe({
-        next: (data) => this.selectedDetails = data,
-        error: (err) => (err.error?.message || "Greška pri povlačenju detalja.")
+        next: (data) => {
+          this.selectedDetails = data;
+          console.log("Details:", data);
+        },
+        error: (err) => {
+          console.error(err);
+          alert("You do not have access to this certificate")
+        }
       });
   }
+
+
 
 
 }

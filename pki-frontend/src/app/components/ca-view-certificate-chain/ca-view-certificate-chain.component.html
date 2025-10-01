@@ -1,14 +1,17 @@
-<div *ngIf="tree" class="certificate-chain">
-  <h2>My Certificate Chain</h2>
+<div *ngIf="tree && tree.length > 0" class="certificate-chain">
+  <h2>My Certificate Chains</h2>
   <ul>
-    <ng-container *ngTemplateOutlet="renderNode; context:{ $implicit: tree }"></ng-container>
+    <li *ngFor="let root of tree">
+      <ng-container *ngTemplateOutlet="renderNode; context:{ $implicit: root }"></ng-container>
+    </li>
   </ul>
 </div>
 
 <ng-template #renderNode let-node>
-  <li (click)="selectNode(node)" class="certificate-node">
+  <li (click)="selectNode(node, $event)" class="certificate-node">
     <strong>{{node.type}}</strong> ({{node.serialNumber}}) - {{node.ownerEmail}}
     <span *ngIf="node.revoked" class="revoked">[REVOKED]</span>
+
     <ul *ngIf="node.children && node.children.length > 0">
       <ng-container *ngFor="let child of node.children">
         <ng-container *ngTemplateOutlet="renderNode; context:{ $implicit: child }"></ng-container>
