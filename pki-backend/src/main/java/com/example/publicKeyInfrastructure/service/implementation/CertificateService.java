@@ -6,6 +6,10 @@ import com.example.publicKeyInfrastructure.crypto.MasterKeyManager;
 import com.example.publicKeyInfrastructure.data.CertificateIssuer;
 import com.example.publicKeyInfrastructure.data.CertificateSubject;
 import com.example.publicKeyInfrastructure.dto.CertificateDTO;
+
+import com.example.publicKeyInfrastructure.dto.CertificateDetailsDTO;
+import com.example.publicKeyInfrastructure.dto.CertificateTreeDTO;
+
 import com.example.publicKeyInfrastructure.enumeration.CertificateType;
 import com.example.publicKeyInfrastructure.model.*;
 import com.example.publicKeyInfrastructure.model.Certificate;
@@ -28,15 +32,20 @@ import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.pkcs.PKCS10CertificationRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.data.crossstore.ChangeSetPersister;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
+
 import java.io.ByteArrayOutputStream;
+
 import java.math.BigInteger;
 import org.springframework.security.access.AccessDeniedException;
 import java.security.*;
@@ -715,5 +724,128 @@ public class CertificateService implements ICertificateService {
 
         return result;
     }
+
+    @Override
+    public List<CertificateTreeDTO> getCertificateChainForLoggedUser() throws Exception {
+        User loggedUser = getLoggedUser();
+
+        boolean isAdmin = loggedUser.getRoles().stream()
+                .anyMatch(role -> "ROLE_ADMIN".equals(role.getName()));
+
+        if (isAdmin) {
+            List<Certificate> roots = certificateRepository.findAllRootCertificates();
+            List<CertificateTreeDTO> result = new ArrayList<>();
+            for (Certificate root : roots) {
+                CertificateTreeDTO tree = buildTree(root, new HashSet<>());
+                if (tree != null) result.add(tree);
+            }
+            return result; // admin i dalje dobija celo stablo
+        }
+
+        // običan user ili CA user
+        List<Certificate> myCerts = certificateRepository.findByOwnerId(loggedUser.getId());
+        if (myCerts.isEmpty()) {
+            throw new RuntimeException("No certificates found for this user.");
+        }
+
+        // skup svih mojih serijskih brojeva
+        Set<String> mySerials = myCerts.stream()
+                .map(Certificate::getSerialNumber)
+                .collect(Collectors.toSet());
+
+        // uzimamo sve root-ove i gradimo celo stablo
+        List<Certificate> roots = certificateRepository.findAllRootCertificates();
+        List<CertificateTreeDTO> result = new ArrayList<>();
+
+        for (Certificate root : roots) {
+            CertificateTreeDTO fullTree = buildTree(root, new HashSet<>());
+            CertificateTreeDTO filtered = filterTreeForUser(fullTree, mySerials);
+            if (filtered != null) {
+                result.add(filtered);
+            }
+        }
+
+        return result;
+    }
+
+
+
+    private CertificateTreeDTO buildTree(Certificate cert, Set<String> visited) {
+        if (visited.contains(cert.getSerialNumber())) {
+            return null;
+        }
+        visited.add(cert.getSerialNumber());
+
+        CertificateTreeDTO dto = new CertificateTreeDTO(
+                cert.getSerialNumber(),
+                cert.getCertificateType(),
+                cert.getOwner().getEmail(),
+                cert.isRevoked(),
+                new ArrayList<>()
+        );
+
+        // nađi decu koja su izdata ovim certom
+        List<Certificate> children = certificateRepository.findChildrenByIssuerSerialNumber(cert.getSerialNumber());
+        for (Certificate child : children) {
+            CertificateTreeDTO childDto = buildTree(child, visited);
+            if (childDto != null) {
+                dto.getChildren().add(childDto);
+            }
+        }
+
+        return dto;
+    }
+
+    private CertificateTreeDTO filterTreeForUser(CertificateTreeDTO root, Set<String> myCertSerials) {
+        // ako je ovaj čvor jedan od mojih ili ima decu koja su moja, zadržavamo ga
+        List<CertificateTreeDTO> filteredChildren = new ArrayList<>();
+        for (CertificateTreeDTO child : root.getChildren()) {
+            CertificateTreeDTO filteredChild = filterTreeForUser(child, myCertSerials);
+            if (filteredChild != null) {
+                filteredChildren.add(filteredChild);
+            }
+        }
+
+        boolean isMine = myCertSerials.contains(root.getSerialNumber());
+        if (isMine || !filteredChildren.isEmpty() || root.getType() == CertificateType.ROOT) {
+            root.setChildren(filteredChildren);
+            return root;
+        }
+
+        return null; // brišemo granu ako nije moja i nema moje dece
+    }
+
+
+    @Override
+    public CertificateDetailsDTO getCertificateDetails(String serialNumber) {
+        User loggedUser;
+        try {
+            loggedUser = getLoggedUser();
+        } catch (ChangeSetPersister.NotFoundException e) {
+            throw new RuntimeException("Logged user not found", e);
+        }
+
+        Certificate cert = certificateRepository.findBySerialNumber(serialNumber)
+                .orElseThrow(() -> new RuntimeException("Certificate not found"));
+
+        // Provera da li je korisnik admin ili vlasnik sertifikata
+        boolean isAdmin = loggedUser.getRoles().stream()
+                .anyMatch(role -> "ROLE_ADMIN".equals(role.getName()));
+
+        if (!cert.getOwner().getId().equals(loggedUser.getId()) && !isAdmin) {
+            throw new AccessDeniedException("User not allowed to view this certificate");
+        }
+
+        return new CertificateDetailsDTO(
+                cert.getSerialNumber(),
+                cert.getCertificateType(),
+                cert.getOwner().getEmail(),
+                cert.getIssuerSerialNumber(),
+                cert.getValidFrom().toString(),
+                cert.getValidTo().toString(),
+                cert.isRevoked()
+        );
+    }
+
 
 }

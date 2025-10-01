@@ -1,0 +1,36 @@
+<div *ngIf="tree && tree.length > 0" class="certificate-chain">
+  <h2>My Certificate Chains</h2>
+  <ul>
+    <li *ngFor="let root of tree">
+      <ng-container *ngTemplateOutlet="renderNode; context:{ $implicit: root }"></ng-container>
+    </li>
+  </ul>
+</div>
+
+<ng-template #renderNode let-node>
+  <li (click)="selectNode(node, $event)" class="certificate-node">
+    <strong>{{node.type}}</strong> ({{node.serialNumber}}) - {{node.ownerEmail}}
+    <span *ngIf="node.revoked" class="revoked">[REVOKED]</span>
+
+    <ul *ngIf="node.children && node.children.length > 0">
+      <ng-container *ngFor="let child of node.children">
+        <ng-container *ngTemplateOutlet="renderNode; context:{ $implicit: child }"></ng-container>
+      </ng-container>
+    </ul>
+  </li>
+</ng-template>
+
+<div *ngIf="selectedDetails" class="certificate-details">
+  <h3>Certificate Details</h3>
+  <table class="user-table">
+    <tbody>
+    <tr><td>Serial:</td><td>{{selectedDetails.serialNumber}}</td></tr>
+    <tr><td>Type:</td><td>{{selectedDetails.type}}</td></tr>
+    <tr><td>Owner:</td><td>{{selectedDetails.ownerEmail}}</td></tr>
+    <tr><td>Issuer:</td><td>{{selectedDetails.issuerSerialNumber}}</td></tr>
+    <tr><td>Valid From:</td><td>{{selectedDetails.validFrom}}</td></tr>
+    <tr><td>Valid To:</td><td>{{selectedDetails.validTo}}</td></tr>
+    <tr><td>Revoked:</td><td>{{selectedDetails.revoked}}</td></tr>
+    </tbody>
+  </table>
+</div>

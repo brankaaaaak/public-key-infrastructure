@@ -2,9 +2,11 @@ package com.example.publicKeyInfrastructure.controller;
 
 import com.example.publicKeyInfrastructure.dto.*;
 import com.example.publicKeyInfrastructure.model.User;
+import com.example.publicKeyInfrastructure.model.UserWithRoleDTO;
 import com.example.publicKeyInfrastructure.model.VerificationToken;
 import com.example.publicKeyInfrastructure.repository.IUserRepository;
 import com.example.publicKeyInfrastructure.repository.IVerificationTokenRepository;
+import com.example.publicKeyInfrastructure.service.implementation.UserService;
 import com.example.publicKeyInfrastructure.service.interfaces.IUserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,6 +76,26 @@ public class UserController {
         TokenPair tokenPair = service.refreshToken(request);
         return ResponseEntity.ok(tokenPair);
     }
+
+    @GetMapping("/all")
+    public List<UserWithRoleDTO> getAllUsers() {
+        System.out.println(service.getAllUsers());
+        return service.getAllUsers();
+    }
+
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @GetMapping("/{id}")
+    public UserDTO getUserById(@PathVariable Long id) {
+        return service.getUserById(id);
+    }
+
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PutMapping("/{id}/upgrade")
+    public ResponseEntity<UserDTO> upgradeUserToCA(@PathVariable Long id) {
+        UserDTO upgraded = ((UserService) service).upgradeToCA(id);
+        return ResponseEntity.ok(upgraded);
+    }
+
     @GetMapping("/all-org/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<List<UserTableViewDTO>> getAllCAUsersForOrg(@PathVariable("id") Long orgId) {
@@ -83,7 +105,7 @@ public class UserController {
     @GetMapping("/all")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<List<UserTableViewDTO>> getAllCAUsers() {
-        List<UserTableViewDTO> users =service.getAllUsers();
+        List<UserTableViewDTO> users =service.getAllCAUsers();
         return ResponseEntity.ok(users);
     }
     @GetMapping("/all-org/role-user/{id}")

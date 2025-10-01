@@ -11,4 +11,5 @@ public interface IOrganizationRepository extends JpaRepository<Organization,Long
     @Query("SELECT o.name FROM Organization o")
     List<String> findAllOrganizationNames();
     Optional<Organization> findByName(String name);
+
 }
