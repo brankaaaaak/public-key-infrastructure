@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import { CertificateService } from '../../services/certificate.service';
 import { CommonModule, NgIf } from '@angular/common';
+import { RevokeCertificateDialogComponent } from '../revoke-certificate-dialog/revoke-certificate-dialog.component';
+import { MatDialog } from '@angular/material/dialog';
 
 @Component({
   selector: 'app-user-download',
@@ -12,7 +14,7 @@ import { CommonModule, NgIf } from '@angular/common';
 export class UserDownloadComponent {
   requests: any[] = [];
 
-  constructor(private service: CertificateService) {}
+  constructor(private service: CertificateService,private dialog: MatDialog) {}
 
   ngOnInit(): void {
     this.service.getDownloadTable().subscribe({
@@ -40,6 +42,18 @@ export class UserDownloadComponent {
   isExpired(validTo: Date | string): boolean {
     return new Date(validTo) < new Date();
   }
+  revokeCertificate(certId: number) {
+    const dialogRef = this.dialog.open(RevokeCertificateDialogComponent, {
+      width: '400px',
+      data: { certId }
+    });
 
-
+    dialogRef.afterClosed().subscribe(reason => {
+      if (reason) {
+        // ovde backend da zove revocation
+        console.log(`Revoking cert ${certId} with reason: ${reason}`);
+        // npr. this.certService.revoke(certId, reason).subscribe(...)
+      }
+  });
+  }
 }

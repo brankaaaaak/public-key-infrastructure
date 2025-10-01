@@ -27,6 +27,9 @@
         <td>
           <button class="btn-download" (click)="downloadCertificate(cert)" [disabled]="isExpired(cert.validTo)" title="This certificate is expired">Download</button>
         </td>
+        <td>
+          <button class="btn-download" (click)="revokeCertificate(cert)" [disabled]="isExpired(cert.validTo)" title="This certificate is expired">Revoke</button>
+        </td>
       </tr>
     </tbody>
   </table>
