@@ -76,6 +76,7 @@ public class UserController {
         TokenPair tokenPair = service.refreshToken(request);
         return ResponseEntity.ok(tokenPair);
     }
+
     @GetMapping("/all")
     public List<UserWithRoleDTO> getAllUsers() {
         System.out.println(service.getAllUsers());
@@ -93,6 +94,13 @@ public class UserController {
     public ResponseEntity<UserDTO> upgradeUserToCA(@PathVariable Long id) {
         UserDTO upgraded = ((UserService) service).upgradeToCA(id);
         return ResponseEntity.ok(upgraded);
+    }
+
+    @GetMapping("/all-org/{id}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<List<UserTableViewDTO>> getAllUsersForOrg(@PathVariable("id") Long orgId) {
+        List<UserTableViewDTO> users =service.getUsersForOrganization(orgId);
+        return ResponseEntity.ok(users);
     }
 
 }

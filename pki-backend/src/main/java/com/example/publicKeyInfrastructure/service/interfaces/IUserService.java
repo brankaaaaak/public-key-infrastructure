@@ -10,7 +10,12 @@ public interface IUserService {
     UserDTO register(RegisterDTO request);
     public TokenPair login(LoginDTO request);
     public TokenPair refreshToken(@Valid RefreshTokenDTO request);
+
     List<UserWithRoleDTO> getAllUsers();
     UserDTO getUserById(Long id);
+
+
+
+    List<UserTableViewDTO> getUsersForOrganization(Long id);
 
 }

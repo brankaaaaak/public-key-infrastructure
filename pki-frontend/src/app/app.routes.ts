@@ -13,10 +13,13 @@ import { UserHomeComponent } from './components/user-home/user-home.component';
 import { AdminManageRequestsComponent } from './components/admin-manage-requests/admin-manage-requests.component';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { CaManageRequestsComponent } from './components/ca-manage-requests/ca-manage-requests.component';
+
 import {ViewUsersComponent} from './components/view-users/view-users.component';
-import {
-  ViewCertificateChainComponent
-} from './components/ca-view-certificate-chain/ca-view-certificate-chain.component';
+import {ViewCertificateChainComponent} from './components/ca-view-certificate-chain/ca-view-certificate-chain.component';
+import { UserDownloadComponent } from './components/user-download/user-download.component';
+import { AdminCreateIntermediateCertificateComponent } from './components/admin-create-intermediate-certificate/admin-create-intermediate-certificate.component';
+import { AdminCreateEndCertificateComponent } from './components/admin-create-end-certificate/admin-create-end-certificate.component';
+
 
 export const routes: Routes = [
     { path: '', component: WelcomePageComponent },
@@ -35,7 +38,10 @@ export const routes: Routes = [
     { path: 'user/user-create-end-certificate', component: UserCreateEndCertificateComponent},
     { path: 'admin/requests', component: AdminManageRequestsComponent},
     { path: 'ca/requests', component: CaManageRequestsComponent},
+
     { path: 'admin/view-users' , component: ViewUsersComponent},
     { path: 'ca/view-certificate-chain', component: ViewCertificateChainComponent }
-
+    { path: 'user/download', component: UserDownloadComponent},
+    { path: 'admin/create-intermediate', component: AdminCreateIntermediateCertificateComponent},
+    {path:'admin/create-end-certificate',component:AdminCreateEndCertificateComponent}
 ];

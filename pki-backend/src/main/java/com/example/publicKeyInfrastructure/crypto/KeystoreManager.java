@@ -14,11 +14,9 @@ import java.security.cert.*;
 import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.List;
-
 @Component
 public class KeystoreManager {
 
-    private final KeyStore keyStore;
     private final char[] password;
 
     public KeystoreManager(@Value("${KEYSTORE_PASSWORD}") String passwordEnv) {
@@ -26,13 +24,6 @@ public class KeystoreManager {
             throw new RuntimeException("Environment variable KEYSTORE_PASSWORD not set");
         }
         this.password = passwordEnv.toCharArray();
-
-        try {
-            this.keyStore = KeyStore.getInstance("JKS");
-            this.keyStore.load(null, password);
-        } catch (KeyStoreException | NoSuchAlgorithmException | CertificateException | IOException e) {
-            throw new RuntimeException("Failed to initialize KeyStore", e);
-        }
     }
 
     /** =================== HELPERS =================== */
@@ -52,121 +43,130 @@ public class KeystoreManager {
         File dir = new File(folder);
         if (!dir.exists()) dir.mkdirs();
         return folder + File.separator + "root.jks";
-
     }
-    /** =================== WRITER =================== */
+
+    private KeyStore loadKeyStore(String keyStoreFile) throws Exception {
+        KeyStore ks = KeyStore.getInstance("JKS");
+        File file = new File(keyStoreFile);
+        if (file.exists()) {
+            try (FileInputStream fis = new FileInputStream(file)) {
+                ks.load(fis, getPassword());
+            }
+        } else {
+            ks.load(null, getPassword()); // novi prazni keystore
+        }
+        return ks;
+    }
+
+    /** =================== WRITE =================== */
     private void write(String keyStoreFile, String alias, PrivateKey privateKey, X509Certificate[] chain) {
         try {
-            keyStore.load(keyStoreFile != null && new File(keyStoreFile).exists() ?
-                    new FileInputStream(keyStoreFile) : null, getPassword());
-
-            keyStore.setKeyEntry(alias, privateKey, getPassword(), chain);
-            keyStore.store(new FileOutputStream(keyStoreFile), getPassword());
+            KeyStore ks = loadKeyStore(keyStoreFile);
+            ks.setKeyEntry(alias, privateKey, getPassword(), chain);
+            try (FileOutputStream fos = new FileOutputStream(keyStoreFile)) {
+                ks.store(fos, getPassword());
+            }
         } catch (Exception e) {
             throw new RuntimeException("Failed to write to KeyStore", e);
         }
     }
 
     public void writeForOrganization(Long orgId, String alias, PrivateKey privateKey, X509Certificate[] chain) {
-        String keyStoreFile = getOrgKeyStoreFile(orgId);
-        write(keyStoreFile, alias, privateKey, chain);
+        write(getOrgKeyStoreFile(orgId), alias, privateKey, chain);
     }
-    public CertificateIssuer readOrgIssuer(Long orgId, String alias) {
-        String keyStoreFile = getOrgKeyStoreFile(orgId);
-        return readIssuer(keyStoreFile, alias);
+
+    private void writeCertificateOnly(String keyStoreFile, String alias, X509Certificate certificate) {
+        try {
+            KeyStore ks = loadKeyStore(keyStoreFile);
+            ks.setCertificateEntry(alias, certificate);
+            try (FileOutputStream fos = new FileOutputStream(keyStoreFile)) {
+                ks.store(fos, getPassword());
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to write certificate to KeyStore", e);
+        }
+    }
+
+    public void writeCertificateForOrganization(Long orgId, String alias, X509Certificate certificate) {
+        writeCertificateOnly(getOrgKeyStoreFile(orgId), alias, certificate);
+    }
+
+    public void writeRoot(String alias, PrivateKey privateKey, X509Certificate certificate) {
+        write(getRootKeyStoreFile(), alias, privateKey, new X509Certificate[]{certificate});
+    }
+
+    /** =================== READ =================== */
+    private Certificate readCertificate(String keyStoreFile, String alias) {
+        try {
+            KeyStore ks = loadKeyStore(keyStoreFile);
+            Certificate cert = ks.getCertificate(alias);
+            if (cert == null)
+                throw new RuntimeException("Certificate not found in KeyStore for alias: " + alias);
+            if (!(cert instanceof X509Certificate))
+                throw new RuntimeException("Certificate is not X509 type for alias: " + alias);
+            return cert;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to read certificate from KeyStore: " + alias, e);
+        }
+    }
+
+    private PrivateKey readPrivateKey(String keyStoreFile, String alias) {
+        try {
+            KeyStore ks = loadKeyStore(keyStoreFile);
+            Key key = ks.getKey(alias, getPassword());
+            if (!(key instanceof PrivateKey privateKey))
+                throw new RuntimeException("Key is not a private key for alias: " + alias);
+            return privateKey;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to read private key from KeyStore: " + alias, e);
+        }
     }
 
     public X509Certificate readOrgCertificate(Long orgId, String alias) {
-        String keyStoreFile = getOrgKeyStoreFile(orgId);
-        return (X509Certificate) readCertificate(keyStoreFile, alias);
+        return (X509Certificate) readCertificate(getOrgKeyStoreFile(orgId), alias);
     }
 
     public PrivateKey readOrgPrivateKey(Long orgId, String alias) {
-        String keyStoreFile = getOrgKeyStoreFile(orgId);
-        return readPrivateKey(keyStoreFile, alias);
+        return readPrivateKey(getOrgKeyStoreFile(orgId), alias);
     }
 
-    /** =================== WRITER ZA ROOT =================== */
-    public void writeRoot(String alias, PrivateKey privateKey, X509Certificate certificate) {
-        String keyStoreFile = getRootKeyStoreFile();
-        write(keyStoreFile, alias, privateKey, new X509Certificate[]{certificate});
-    }
-
-    public CertificateIssuer readRootIssuer(String alias) {
-        String keyStoreFile = getRootKeyStoreFile();
-        return readIssuer(keyStoreFile, alias);
-    }
-
-    public X509Certificate readRootCertificate(String alias) {
-        String keyStoreFile = getRootKeyStoreFile();
-        return (X509Certificate) readCertificate(keyStoreFile, alias);
-    }
-
-    public PrivateKey readRootPrivateKey(String alias) {
-        String keyStoreFile = getRootKeyStoreFile();
-        return readPrivateKey(keyStoreFile, alias);
-    }
-
-
-    /** =================== READER =================== */
-    public CertificateIssuer readIssuer(String keyStoreFile, String alias) {
+    public CertificateIssuer readOrgIssuer(Long orgId, String alias) {
         try {
-            keyStore.load(new FileInputStream(keyStoreFile), getPassword());
-
-            X509Certificate cert = (X509Certificate) keyStore.getCertificate(alias);
+            KeyStore ks = loadKeyStore(getOrgKeyStoreFile(orgId));
+            X509Certificate cert = (X509Certificate) ks.getCertificate(alias);
             if (cert == null) throw new RuntimeException("Certificate not found for alias: " + alias);
-
-            PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, getPassword());
+            PrivateKey privateKey = (PrivateKey) ks.getKey(alias, getPassword());
             if (privateKey == null) throw new RuntimeException("Private key not found for alias: " + alias);
-
             X500Name issuerName = new JcaX509CertificateHolder(cert).getSubject();
             return new CertificateIssuer(issuerName, privateKey, cert.getPublicKey());
-
         } catch (Exception e) {
             throw new RuntimeException("Failed to read issuer from KeyStore", e);
         }
     }
 
-    public CertificateIssuer readIssuerForOrg(Long orgId, String alias) {
-        String keyStoreFile = getOrgKeyStoreFile(orgId);
-        return readIssuer(keyStoreFile, alias);
+    public X509Certificate readRootCertificate(String alias) {
+        return (X509Certificate) readCertificate(getRootKeyStoreFile(), alias);
     }
 
-    public Certificate readCertificate(String keyStoreFile, String alias) {
+    public PrivateKey readRootPrivateKey(String alias) {
+        return readPrivateKey(getRootKeyStoreFile(), alias);
+    }
+
+    public CertificateIssuer readRootIssuer(String alias) {
         try {
-            keyStore.load(new FileInputStream(keyStoreFile), getPassword());
-            Certificate cert = keyStore.getCertificate(alias);
-            //keyStore.getCertificateChain(alias)
+            KeyStore ks = loadKeyStore(getRootKeyStoreFile());
+            X509Certificate cert = (X509Certificate) ks.getCertificate(alias);
             if (cert == null) throw new RuntimeException("Certificate not found for alias: " + alias);
-            return cert;
+            PrivateKey privateKey = (PrivateKey) ks.getKey(alias, getPassword());
+            if (privateKey == null) throw new RuntimeException("Private key not found for alias: " + alias);
+            X500Name issuerName = new JcaX509CertificateHolder(cert).getSubject();
+            return new CertificateIssuer(issuerName, privateKey, cert.getPublicKey());
         } catch (Exception e) {
-            throw new RuntimeException("Failed to read certificate from KeyStore", e);
+            throw new RuntimeException("Failed to read issuer from KeyStore", e);
         }
     }
 
-    public Certificate readCertificateForOrg(Long orgId, String alias) {
-        String keyStoreFile = getOrgKeyStoreFile(orgId);
-        return readCertificate(keyStoreFile, alias);
-    }
-
-    public PrivateKey readPrivateKey(String keyStoreFile, String alias) {
-        try {
-            keyStore.load(new FileInputStream(keyStoreFile), getPassword());
-            Key key = keyStore.getKey(alias, getPassword());
-            if (!(key instanceof PrivateKey privateKey))
-                throw new RuntimeException("Key is not a private key");
-            return privateKey;
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to read private key from KeyStore", e);
-        }
-    }
-
-    public PrivateKey readPrivateKeyForOrg(Long orgId, String alias) {
-        String keyStoreFile = getOrgKeyStoreFile(orgId);
-        return readPrivateKey(keyStoreFile, alias);
-    }
-
-    /** =================== DOWNLOAD CERTIFICATE =================== */
+    /** =================== DOWNLOAD =================== */
     public void downloadCertificate(Certificate certificate, String fileName) {
         try (FileOutputStream fos = new FileOutputStream(fileName)) {
             fos.write(certificate.getEncoded());
@@ -175,4 +175,3 @@ public class KeystoreManager {
         }
     }
 }
-

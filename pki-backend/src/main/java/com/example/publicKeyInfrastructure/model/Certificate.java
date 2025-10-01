@@ -23,6 +23,10 @@ public class Certificate {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @OneToOne
+    @JoinColumn(name = "request_id", nullable = false)
+    private CertificateRequest request;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private CertificateType certificateType;
@@ -55,7 +59,7 @@ public class Certificate {
     @JoinColumn(name = "organization_id", nullable = true)
     private Organization organization;
 
-    @Column(name="encrypted_private_key",nullable = false,columnDefinition = "bytea")
+    @Column(name="encrypted_private_key",nullable = true,columnDefinition = "bytea")
     private byte[] encryptedPrivateKey;
 
     @Column(name="public_key", nullable = false,columnDefinition = "bytea")
@@ -65,7 +69,8 @@ public class Certificate {
         Date now = new Date();
         return !now.before(validFrom) && now.before(validTo);
     }
-    public Certificate(CertificateType certificateType,User owner,String serialNumber,String issuerSerialNumber,Date validFrom,Date validTo,boolean revoked,String revocationReason,Organization organization,byte[] encryptedPrivateKey,byte[] publicKey){
+    public Certificate(CertificateRequest reguest, CertificateType certificateType,User owner,String serialNumber,String issuerSerialNumber,Date validFrom,Date validTo,boolean revoked,String revocationReason,Organization organization,byte[] encryptedPrivateKey,byte[] publicKey){
+        this.request = reguest;
         this.certificateType=certificateType;
         this.owner=owner;
         this.serialNumber=serialNumber;

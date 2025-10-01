@@ -122,6 +122,7 @@ public class UserService implements IUserService{
     }
 
     @Override
+
     public List<UserWithRoleDTO> getAllUsers() {
         return userRepository.findAll()
                 .stream()
@@ -160,6 +161,16 @@ public class UserService implements IUserService{
         userRepository.save(user);
 
         return new UserDTO(user);
+
+
+    @Override
+    public List<UserTableViewDTO> getUsersForOrganization(Long id) {
+        return userRepository.findAllEnabledUsersByOrganization(id).stream()
+                .map(u -> {
+                    UserTableViewDTO dto = new UserTableViewDTO(u);
+                    return dto;
+                })
+                .collect(Collectors.toList());
     }
 
 }

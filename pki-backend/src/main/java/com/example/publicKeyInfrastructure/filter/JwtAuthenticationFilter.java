@@ -31,7 +31,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String authHeader = request.getHeader("Authorization");
         final String jwt;
         final String username;
-
+        if (request.getServletPath().equals("/api/users/refresh-token")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;

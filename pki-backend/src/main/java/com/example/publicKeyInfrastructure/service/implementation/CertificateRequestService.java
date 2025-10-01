@@ -21,7 +21,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class CertificateRequestService implements ICertificateRequestService {
@@ -49,18 +51,24 @@ public class CertificateRequestService implements ICertificateRequestService {
                     .orElseThrow(() -> new Exception("Certificate not found!"));
         }
         newRequest.setIssuer(issuer);
-        User subject = getLoggedUser();
-        newRequest.setSubject(subject);
-        boolean isAdmin = subject.getRoles().stream()
+        User loggedUser=getLoggedUser();
+        boolean isAdmin = loggedUser.getRoles().stream()
                 .anyMatch(r -> r.getName().equals("ROLE_ADMIN"));
-        boolean isCAUser=subject.getRoles().stream()
+        boolean isCAUser=loggedUser.getRoles().stream()
                 .anyMatch((r->r.getName().equals("ROLE_CA")));
-        boolean isUser=subject.getRoles().stream()
+        boolean isUser=loggedUser.getRoles().stream()
                 .anyMatch((r->r.getName().equals("ROLE_USER")));
+        User subject;
+        if(isAdmin && CertificateType.valueOf(request.getCertificateType())!=CertificateType.ROOT )
+            subject=userRepository.findById(request.getOwnerId())
+                    .orElseThrow(() -> new Exception("User not found!"));
+        else
+            subject = getLoggedUser();
+        newRequest.setSubject(subject);
         if(isAdmin){
             newRequest.setRequestType(RequestType.ACCEPTED);
-            certificateService.createCertificate(newRequest);
             newRequest = certificateRequestRepository.save(newRequest);
+            certificateService.createCertificate(newRequest);
         }
         else if(isCAUser) {
             if(newRequest.getCertificateType()==CertificateType.INTERMEDIATE || newRequest.getCertificateType()==CertificateType.END)
@@ -129,4 +137,12 @@ public class CertificateRequestService implements ICertificateRequestService {
         return new CertificateRequestViewDTO(request);
     }
 
+    @Override
+    public List<CertificateRequestViewDTO> getMineEECertificatesRequests() throws ChangeSetPersister.NotFoundException {
+        User loggedUser = getLoggedUser();
+        List<CertificateRequest> requests = this.certificateRequestRepository.findAllBySubjectAndCertificateType(loggedUser, CertificateType.END);
+        return requests.stream()
+                .map(CertificateRequestViewDTO::new)
+                .collect(Collectors.toList());
+    }
 }

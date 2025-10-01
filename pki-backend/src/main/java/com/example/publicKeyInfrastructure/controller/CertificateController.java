@@ -5,12 +5,12 @@ import com.example.publicKeyInfrastructure.service.interfaces.ICertificateReques
 import com.example.publicKeyInfrastructure.service.interfaces.ICertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.crossstore.ChangeSetPersister;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
@@ -122,5 +122,33 @@ public class CertificateController {
     }
 
 
+    @GetMapping("/download-table")
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CA') or hasRole('ROLE_USER')")
+    public ResponseEntity<List<CertificateDTO>> getDownloadTable() throws ChangeSetPersister.NotFoundException {
+        return ResponseEntity.ok(certificateService.getDownloadTable());
+    }
+    @GetMapping("/{id}/download")
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CA') or hasRole('ROLE_USER')")
+    public ResponseEntity<byte[]> downloadCertificate(@PathVariable Long id) throws Exception {
+        byte[] resource = certificateService.generateKeystore(id);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=certificate.p12")
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(resource);
+    }
+    @GetMapping("/all")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<List<CertificateDTO>> getAllValidCertificates() {
+        List<CertificateDTO> certificates = certificateService.getAllValidCertificates();
+        return ResponseEntity.ok(certificates);
+    }
+
+    @GetMapping("/all-without-root")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<List<CertificateDTO>> getAllValidCertificatesWithoutRoot() {
+        List<CertificateDTO> certificates = certificateService.getAllValidCertificatesWithoutRoot();
+        return ResponseEntity.ok(certificates);
+    }
 
 }

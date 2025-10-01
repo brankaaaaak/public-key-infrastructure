@@ -5,10 +5,12 @@
     <div class="buttons">
         <a class="btn-primary">Add CA User</a>
         <a [routerLink]="['/admin/create-root']" class="btn-secondary">Create Root Certificate</a>
-        <a class="btn-primary">Create Intermediate Certificate</a>
-        <a class="btn-secondary">Create End-Entity Certificate</a>
+        <a [routerLink]="['/admin/create-intermediate']" class="btn-primary" >Create Intermediate Certificate</a>
+        <a [routerLink]="['/admin/create-end-certificate']" class="btn-secondary">Create End-Entity Certificate</a>
         <a [routerLink]="['/ca/view-certificate-chain']"  class="btn-primary">View All Certificates</a>
         <a [routerLink]="['/admin/view-users']"  class="btn-secondary">View All Users</a>
+
         <a [routerLink]="['/admin/requests']" class="btn-primary" >View All Certificate Requests</a>
+        <a [routerLink]="['/user/download']" class="btn-primary">Download</a>
     </div>
 </div>
