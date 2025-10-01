@@ -19,5 +19,7 @@ public interface ICertificateRequestRepository extends JpaRepository<Certificate
     @Query("SELECT cr FROM CertificateRequest cr " +
             "WHERE cr.requestType = :status")
     List<CertificateRequest> findPendingRequestsCertificates(@Param("status") RequestType status);
+
     List<CertificateRequest> findAllBySubjectAndCertificateType(User subject, CertificateType type);
+
 }

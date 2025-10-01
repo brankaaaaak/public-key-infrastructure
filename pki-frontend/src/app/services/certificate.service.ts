@@ -33,6 +33,13 @@ export class CertificateService {
   getPendingRequestsCA(): Observable<any[]> {
     return this.http.get<any[]>(`${environment.apiHost}/api/certificate/ca-requests/pending`);
   }
+
+  getMyCertificateChain(): Observable<any> {
+    return this.http.get<any>(`${environment.apiHost}/api/certificate/my-chain`);
+  }
+  getCertificateDetails(serialNumber: string): Observable<any> {
+    return this.http.get<any>(`${environment.apiHost}/api/certificate/details/${serialNumber}`);
+
   getDownloadTable(): Observable<any[]> {
     return this.http.get<any[]>(`${environment.apiHost}/api/certificate/download-table`);
   }
@@ -47,5 +54,6 @@ export class CertificateService {
   }
   getCertificatesWithoutRoot(): Observable<any> {
     return this.http.get<any>(`${environment.apiHost}/api/certificate/all-without-root`);
+
   }
 }

@@ -15,10 +15,19 @@ export class UserService {
   register(dto: any): Observable<any> {
     return this.http.post<any>(`${environment.apiHost}/api/users/register`, dto);
   }
-  getAllUsers(): Observable<any> {
-    return this.http.get<any>(`${environment.apiHost}/api/users/all`);
+
+  getAllUsers(): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiHost}/api/users/all`);
   }
+  getUserById(id: number): Observable<any> {
+    return this.http.get<any>(`${environment.apiHost}/api/users/${id}`);
+  }
+
+  upgradeUserToCA(id: number): Observable<any> {
+    return this.http.put<any>(`${environment.apiHost}/api/users/${id}/upgrade`, {});
+
   getUsersByOrganization(orgId: number): Observable<any[]> {
     return this.http.get<any[]>(`${environment.apiHost}/api/users/all-org/${orgId}`);
+
   }
 }

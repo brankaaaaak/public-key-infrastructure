@@ -1,9 +1,6 @@
 package com.example.publicKeyInfrastructure.controller;
 
-import com.example.publicKeyInfrastructure.dto.CertificateDTO;
-import com.example.publicKeyInfrastructure.dto.CertificateRequestDTO;
-import com.example.publicKeyInfrastructure.dto.CertificateRequestViewDTO;
-import com.example.publicKeyInfrastructure.dto.CreateCertificateRequestDTO;
+import com.example.publicKeyInfrastructure.dto.*;
 import com.example.publicKeyInfrastructure.service.interfaces.ICertificateRequestService;
 import com.example.publicKeyInfrastructure.service.interfaces.ICertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +9,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -93,6 +91,37 @@ public class CertificateController {
         CertificateRequestViewDTO dto = requestService.denyRequest(id, reason);
         return ResponseEntity.ok(dto);
     }
+
+    @GetMapping("/my-chain")
+    public ResponseEntity<?> getMyCertificateChain() {
+        try {
+            List<CertificateTreeDTO> tree = certificateService.getCertificateChainForLoggedUser();
+            return ResponseEntity.ok(tree);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Internal server error"));
+        }
+    }
+
+
+    @GetMapping("/details/{serialNumber}")
+    public ResponseEntity<?> getCertificateDetails(@PathVariable String serialNumber) {
+        try {
+            CertificateDetailsDTO details = certificateService.getCertificateDetails(serialNumber);
+            return ResponseEntity.ok(details);
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("message", "You are not authorized to view this certificate."));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", e.getMessage()));
+        }
+    }
+
+
     @GetMapping("/download-table")
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CA') or hasRole('ROLE_USER')")
     public ResponseEntity<List<CertificateDTO>> getDownloadTable() throws ChangeSetPersister.NotFoundException {
@@ -121,4 +150,5 @@ public class CertificateController {
         List<CertificateDTO> certificates = certificateService.getAllValidCertificatesWithoutRoot();
         return ResponseEntity.ok(certificates);
     }
+
 }

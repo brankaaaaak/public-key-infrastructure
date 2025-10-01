@@ -2,11 +2,11 @@
   <h1>Welcome, CA User!</h1>
   <p>Manage your organization's certificates and templates below:</p>
   <button class="logout-button" (click)="logout()">Logout</button>
-  
+
   <div class="buttons">
     <a [routerLink]="['/ca/ca-create-intermediate-certificate']" class="btn-primary" >Create Intermediate Certificate</a>
     <a [routerLink]="['/ca/ca-create-end-certificate']" class="btn-secondary">Create End-Entity Certificate</a>
-    <a class="btn-primary">View My Certificate Chain</a>
+    <a [routerLink]="['/ca/view-certificate-chain']"  class="btn-primary">View My Certificate Chain</a>
     <a [routerLink]="['/ca/requests']" class="btn-primary" >View All Certificate Requests For My Signature</a>
     <a [routerLink]="['/user/download']" class="btn-primary">Download</a>
   </div>

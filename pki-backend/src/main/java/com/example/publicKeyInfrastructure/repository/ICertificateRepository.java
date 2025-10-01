@@ -38,6 +38,14 @@ public interface ICertificateRepository extends JpaRepository<Certificate, Long>
             "AND c.revoked = false " +
             "AND CURRENT_TIMESTAMP BETWEEN c.validFrom AND c.validTo")
     Optional<Certificate> findValidRootCertificate();
+
+    @Query("SELECT c FROM Certificate c WHERE c.issuerSerialNumber = :issuerSerialNumber AND c.serialNumber <> :issuerSerialNumber")
+    List<Certificate> findChildrenByIssuerSerialNumber(@Param("issuerSerialNumber") String issuerSerialNumber);
+
+    List<Certificate> findByOwnerId(Long ownerId);
+    @Query("SELECT c FROM Certificate c WHERE c.certificateType = 'ROOT'")
+    List<Certificate> findAllRootCertificates();
+
     Optional<Certificate> findByRequest(CertificateRequest request);
     List<Certificate> findAllByOwner(User owner);
     List<Certificate> findByIssuerSerialNumber(String issuerSerialNumber);
@@ -51,4 +59,5 @@ public interface ICertificateRepository extends JpaRepository<Certificate, Long>
             "AND c.revoked = false " +
             "AND CURRENT_TIMESTAMP BETWEEN c.validFrom AND c.validTo")
     List<Certificate> findValidIntermediate();
+
 }
