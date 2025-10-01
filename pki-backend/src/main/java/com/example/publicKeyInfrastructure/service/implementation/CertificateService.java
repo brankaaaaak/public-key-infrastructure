@@ -593,6 +593,14 @@ public class CertificateService implements ICertificateService {
         Certificate cert = certificateRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Certificate not found for this request"));
 
+        if (cert.isRevoked()) {
+            throw new IllegalStateException("Certificate has been revoked and cannot be downloaded.");
+        }
+        Date now = new Date();
+        if (now.before(cert.getValidFrom()) || now.after(cert.getValidTo())) {
+            throw new IllegalStateException("Certificate is expired and cannot be downloaded.");
+        }
+
         if (cert.getCertificateType() == CertificateType.ROOT) {
             throw new AccessDeniedException("Root certificates cannot be downloaded.");
         }
