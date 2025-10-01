@@ -13,10 +13,10 @@ public class CRLController {
     @Autowired
     private ICertificateRevokeService crlService;
 
-    @GetMapping("/{caIdentifier}/{alias}")
-    public ResponseEntity<byte[]> getCRL(@PathVariable String caIdentifier,@PathVariable String alias) throws Exception {
-            boolean isRoot = caIdentifier.equalsIgnoreCase("root"); // ili provera po nazivu JKS
-            byte[] crlBytes = crlService.getCRLBytes(caIdentifier, isRoot,alias);
+    @GetMapping("/{orgId}/{caIdentifier}")
+    public ResponseEntity<byte[]> getCRL(@PathVariable Long orgId,@PathVariable String caIdentifier) throws Exception {
+            boolean isRoot = orgId==0;
+            byte[] crlBytes = crlService.getCRLBytes(caIdentifier, isRoot,orgId);
 
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_TYPE, "application/pkix-crl")

@@ -40,7 +40,7 @@ public interface ICertificateRepository extends JpaRepository<Certificate, Long>
     Optional<Certificate> findValidRootCertificate();
     Optional<Certificate> findByRequest(CertificateRequest request);
     List<Certificate> findAllByOwner(User owner);
-    List<Certificate> findByIssuerSerialNumber(String issuerSerialNumber);
+    List<Certificate> findAllByIssuerSerialNumber(String issuerSerialNumber);
     Optional<Certificate> findBySerialNumber(String serialNumber);
 
     // Svi validni intermediate sertifikati

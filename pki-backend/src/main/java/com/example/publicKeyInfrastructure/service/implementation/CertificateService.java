@@ -441,16 +441,19 @@ public class CertificateService implements ICertificateService {
                 throw new IllegalArgumentException("Unknown cert type");
         }
         try {
-            String crlUrl = getCRLUrl(certType,org);
+            if(certType==CertificateType.INTERMEDIATE || certType==CertificateType.ROOT)
+            {
+                String crlUrl = getCRLUrl(certType,org,subject.getSerialNumber());
 
-            DistributionPointName distPointName = new DistributionPointName(
-                    new GeneralNames(new GeneralName(GeneralName.uniformResourceIdentifier, crlUrl+"/"+subject.getSerialNumber()))
-            );
+                DistributionPointName distPointName = new DistributionPointName(
+                        new GeneralNames(new GeneralName(GeneralName.uniformResourceIdentifier, crlUrl))
+                );
 
-            DistributionPoint distPoint = new DistributionPoint(distPointName, null, null);
-            CRLDistPoint crlDistPoints = new CRLDistPoint(new DistributionPoint[]{distPoint});
+                DistributionPoint distPoint = new DistributionPoint(distPointName, null, null);
+                CRLDistPoint crlDistPoints = new CRLDistPoint(new DistributionPoint[]{distPoint});
 
-            certBuilder.addExtension(Extension.cRLDistributionPoints, false, crlDistPoints);
+                certBuilder.addExtension(Extension.cRLDistributionPoints, false, crlDistPoints);
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -464,14 +467,14 @@ public class CertificateService implements ICertificateService {
 
         return certificate;
     }
-    private String getCRLUrl(CertificateType certType,Organization org) throws ChangeSetPersister.NotFoundException {
+    private String getCRLUrl(CertificateType certType,Organization org,String serialNumber) throws ChangeSetPersister.NotFoundException {
         String baseUrl = "https://localhost:8443/api/crl";
         // primer: root, intermediate po organizaciji
         if (certType == CertificateType.ROOT && org==null) {
-            return baseUrl+"/root";
+            return baseUrl+"/0/"+serialNumber;
         } else  {
             // možeš koristiti serialNumber organizacije ili issuer
-            return baseUrl+"/org_" + org.getId();
+            return baseUrl+"/" + org.getId()+"/"+serialNumber;
         }
     }
 
@@ -695,7 +698,7 @@ public class CertificateService implements ICertificateService {
         throw new ChangeSetPersister.NotFoundException();
     }
     private List<Certificate> getSignedCertificatesRecursive(String issuerSerialNumber) {
-        List<Certificate> signed = certificateRepository.findByIssuerSerialNumber(issuerSerialNumber);
+        List<Certificate> signed = certificateRepository.findAllByIssuerSerialNumber(issuerSerialNumber);
         List<Certificate> result = new ArrayList<>(signed);
 
         for (Certificate cert : signed) {

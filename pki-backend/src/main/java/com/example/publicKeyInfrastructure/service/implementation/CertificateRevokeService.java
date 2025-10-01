@@ -41,10 +41,11 @@ public class CertificateRevokeService implements ICertificateRevokeService {
         if (!cert.isRevoked()) {
             cert.setRevoked(true);
             cert.setRevocationReason(reason);
+            cert.setRevocationDate(LocalDateTime.now());
             certificateRepository.save(cert);
         }
 
-        List<Certificate> children = certificateRepository.findByIssuerSerialNumber(cert.getSerialNumber());
+        List<Certificate> children = certificateRepository.findAllByIssuerSerialNumber(cert.getSerialNumber());
         for (Certificate child : children) {
             revokeRecursive(child, "CACompromise"); // svi potomci se vode kao kompromitovani
         }
@@ -57,7 +58,7 @@ public class CertificateRevokeService implements ICertificateRevokeService {
 
     private void collectRevokedRecursive(String issuerSerialNumber, List<Certificate> accumulator) {
         // Direktni potomci
-        List<Certificate> children = certificateRepository.findByIssuerSerialNumber(issuerSerialNumber);
+        List<Certificate> children = certificateRepository.findAllByIssuerSerialNumber(issuerSerialNumber);
 
         for (Certificate child : children) {
             if (child.isRevoked()) {
@@ -73,14 +74,14 @@ public class CertificateRevokeService implements ICertificateRevokeService {
     private Map<String, X509CRL> crlCache = new HashMap<>();
 
     // Generiše CRL za dati CA
-    public X509CRL generateCRL(String caIdentifier,boolean isRoot,String alias) throws Exception {
+    public X509CRL generateCRL(String caIdentifier,boolean isRoot,Long orgId) throws Exception {
         CertificateIssuer issuer = isRoot ?
-                keystoreManager.readRootIssuer(alias) :
-                keystoreManager.readOrgIssuer(Long.parseLong(caIdentifier.split("_")[1]), alias);
+                keystoreManager.readRootIssuer(caIdentifier) :
+                keystoreManager.readOrgIssuer(orgId, caIdentifier);
 
         X509Certificate caCert = isRoot ?
-                keystoreManager.readRootCertificate(alias) :
-                keystoreManager.readOrgCertificate(Long.parseLong(caIdentifier.split("_")[1]), alias);
+                keystoreManager.readRootCertificate(caIdentifier) :
+                keystoreManager.readOrgCertificate(orgId, caIdentifier);
 
         PrivateKey caPrivateKey = issuer.getPrivateKey();
 
@@ -91,7 +92,7 @@ public class CertificateRevokeService implements ICertificateRevokeService {
         crlBuilder.setNextUpdate(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000)); // next update za 24h
 
         // Svi revoked sertifikati koje je ovaj CA izdao
-        List<Certificate> revokedCerts = findAllRevokedDescendants(caIdentifier);
+        List<Certificate> revokedCerts = certificateRepository.findRevokedByIssuer(caIdentifier);
         for (Certificate revoked : revokedCerts) {
             int reasonValue = mapReasonStringToCRLReason(revoked.getRevocationReason());
             crlBuilder.addCRLEntry(
@@ -112,7 +113,7 @@ public class CertificateRevokeService implements ICertificateRevokeService {
         return switch (reason) {
             case "unspecified" -> CRLReason.unspecified;
             case "keyCompromise" -> CRLReason.keyCompromise;
-            case "cACompromise" -> CRLReason.cACompromise;
+            case "CACompromise" -> CRLReason.cACompromise;
             case "affiliationChanged" -> CRLReason.affiliationChanged;
             case "superseded" -> CRLReason.superseded;
             case "cessationOfOperation" -> CRLReason.cessationOfOperation;
@@ -124,8 +125,8 @@ public class CertificateRevokeService implements ICertificateRevokeService {
     }
 
 
-    public byte[] getCRLBytes(String caIdentifier,boolean isRoot,String alias) throws Exception {
-        X509CRL crl = crlCache.getOrDefault(caIdentifier, generateCRL(caIdentifier,isRoot,alias));
+    public byte[] getCRLBytes(String caIdentifier,boolean isRoot,Long orgId) throws Exception {
+        X509CRL crl = crlCache.getOrDefault(caIdentifier, generateCRL(caIdentifier,isRoot,orgId));
         return crl.getEncoded();
     }
 }
