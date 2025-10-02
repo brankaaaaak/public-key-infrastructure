@@ -142,8 +142,7 @@ public class CertificateService implements ICertificateService {
             }
             // Novi deo: End Entity CSR scenario
             if(certificateRequest.getCertificateType() == CertificateType.END &&
-                    certificateRequest.getCsrPem() != null && !certificateRequest.getCsrPem().isEmpty()) {
-
+                    certificateRequest.getCsrPem() != null) {
                 // poziv helper metode koja parsira CSR i kreira sertifikat
                 return createEndEntityFromCsr(certificateRequest, certificateIssuer);
             }
@@ -163,23 +162,13 @@ public class CertificateService implements ICertificateService {
             // 1. Parsiraj CSR iz PEM stringa
             PKCS10CertificationRequest csr = CryptoUtils.parseCsrFromPem(certificateRequest.getCsrPem());
 
-            // 2. Uzimamo javni ključ iz CSR-a
-            PublicKey subjectPublicKey = CryptoUtils.getPublicKeyFromCsr(csr);
 
-            // 3. Kreiramo CertificateSubject (privatni ključ ostaje kod korisnika)
+            // 2. Kreiramo CertificateSubject (privatni ključ ostaje kod korisnika)
             CertificateSubject subject = createCertificateSubjectFromCsr(certificateRequest,csr);
 
-            // 4. Potpiši sertifikat sa issuer-om i dodaj ekstenzije
-            X509Certificate signedCert = createCertificateContent(
-                    subject,
-                    certificateIssuer,
-                    certificateRequest.getCertificateType(),
-                    certificateRequest.getSubject().getOrganization()
-            );
-            // 5. Sačuvaj sertifikat u bazi (bez privatnog ključa)
+            // 3. Sačuvaj sertifikat u bazi (bez privatnog ključa)
             saveCertificateToDb(certificateRequest, subject, certificateIssuer, null);
 
-            // 6. Vrati DTO sa potpisanim sertifikatom
             return null;
 
         } catch (Exception e) {
@@ -230,10 +219,11 @@ public class CertificateService implements ICertificateService {
 
                     // Pravimo chain pre upisa
                     X509Certificate[] chain = buildCertificateChainForKeystore(x509Certificate,issuerCert);
-
-                    keystoreManager.writeForOrganization(orgId, alias, subject.getPrivateKey(), chain);
+                    
                     if(encryptedPrivateKey==null)
                         keystoreManager.writeCertificateForOrganization(orgId,alias,x509Certificate);
+                    else
+                        keystoreManager.writeForOrganization(orgId, alias, subject.getPrivateKey(), chain);
                 }
 
                 Certificate certificate = new Certificate(
@@ -347,11 +337,11 @@ public class CertificateService implements ICertificateService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to extract public key from CSR", e);
         }
-        User loggedUser = getLoggedUser(); // ili iz SecurityContext-a
         //X500Name originalName = CryptoUtils.getSubjectFromCsr(csr);
 
         // X500Name iz CSR-a
-        X500Name subjectName = buildX500Name(getLoggedUser());
+        User owner=certificateRequest.getSubject();
+        X500Name subjectName = buildX500Name(owner);
 
         // Start i end date
         Date startDate = new Date();

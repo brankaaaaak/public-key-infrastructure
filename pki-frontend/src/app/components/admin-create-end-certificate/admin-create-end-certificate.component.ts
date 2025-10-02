@@ -180,7 +180,7 @@ onIssuerChange(): void {
         this.successMessage = 'End Entity certificate created successfully!';
         this.errorMessage = '';
         this.loadCertificates();
-        this.selectedIssuerSerialNumber
+        this.selectedIssuerSerialNumber=null;
         this.users = [];
       },
       error: (error) => {
