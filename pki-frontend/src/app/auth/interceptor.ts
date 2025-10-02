@@ -20,7 +20,7 @@ export class Interceptor implements HttpInterceptor {
     private auth: AuthService,
     private _snackBar: MatSnackBar,
     private router: Router
-  ) { }
+  ) {}
 
   intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     const token = this.auth.getToken();
@@ -30,42 +30,69 @@ export class Interceptor implements HttpInterceptor {
 
     return next.handle(request).pipe(
       catchError(error => {
-        if (error instanceof HttpErrorResponse && error.status === 401 || error.status === 403) {
-          if (!this.isRefreshing) {
-            this.isRefreshing = true;
-            this.refreshTokenSubject.next(null);
+        // TOKEN EXPIRED → pokušaj refresh
+        if (error instanceof HttpErrorResponse && error.status === 401 && error.error?.message === 'Token expired') {
+          return this.handle401Error(request, next);
+        }
 
-            return this.auth.refreshToken().pipe(
-              switchMap((newAccessToken: string) => {
-                this.isRefreshing = false;
-                this.auth.setToken(newAccessToken);
-                this.refreshTokenSubject.next(newAccessToken);
+        // REFRESH TOKEN FAIL → logout
+        if (error instanceof HttpErrorResponse && error.status === 401) {
+          this.auth.logout();
+          this.openSnackBar("Session expired. Please log in again.");
+          this.router.navigate(['/login']);
+        }
 
-                return next.handle(this.addTokenHeader(request, newAccessToken));
-              }),
-              catchError(err => {
-                this.isRefreshing = false;
-                this.auth.logout();
-                this.openSnackBar("Session expired. Please log in again.");
-                this.router.navigate(['/login']);
-                return throwError(() => err);
-              })
-            );
-          } else {
-            return this.refreshTokenSubject.pipe(
-              switchMap((token) => {
-                if (token) {
-                  return next.handle(this.addTokenHeader(request, token));
-                }
-                return throwError(() => error);
-              })
-            );
-          }
+        // FORBIDDEN → user nema prava, NE logout
+        if (error instanceof HttpErrorResponse && error.status === 403) {
+          this.openSnackBar("You don't have permission to access this resource.");
         }
 
         return throwError(() => error);
       })
     );
+  }
+
+  private handle401Error(request: HttpRequest<any>, next: HttpHandler) {
+    if (!this.isRefreshing) {
+      this.isRefreshing = true;
+      this.refreshTokenSubject.next(null);
+
+      return this.auth.refreshToken().pipe(
+        switchMap((newAccessToken: string) => {
+          this.isRefreshing = false;
+          this.auth.setToken(newAccessToken);
+          this.refreshTokenSubject.next(newAccessToken);
+
+          return next.handle(this.addTokenHeader(request, newAccessToken));
+        }),
+        catchError(err => {
+          this.isRefreshing = false;
+          this.auth.logout();
+          this.openSnackBar("Session expired. Please log in again.");
+          this.router.navigate(['/login']);
+          return throwError(() => err);
+        })
+      );
+    } else {
+      return this.auth.refreshToken().pipe(
+        switchMap((newAccessToken: string) => {
+          this.isRefreshing = false;
+
+          // ovde je token već upisan u localStorage u storeTokens()
+          // ali ga osvježimo i u BehaviorSubject
+          this.refreshTokenSubject.next(newAccessToken);
+
+          return next.handle(this.addTokenHeader(request, newAccessToken));
+        }),
+        catchError(err => {
+          this.isRefreshing = false;
+          this.auth.logout();
+          this.openSnackBar("Session expired. Please log in again.");
+          this.router.navigate(['/login']);
+          return throwError(() => err);
+        })
+      );
+    }
   }
 
   private addTokenHeader(request: HttpRequest<any>, token: string) {
