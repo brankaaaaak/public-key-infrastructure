@@ -22,9 +22,8 @@ export class UserService {
     return this.http.get<any[]>(`${environment.apiHost}/api/users/all-org/${orgId}`);
 
   }
-
   getAllUsers(): Observable<any[]> {
-    return this.http.get<any[]>(`${environment.apiHost}/api/users/all`);
+    return this.http.get<any[]>(`${environment.apiHost}/api/users/all-users`);
   }
   getUserById(id: number): Observable<any> {
     return this.http.get<any>(`${environment.apiHost}/api/users/${id}`);

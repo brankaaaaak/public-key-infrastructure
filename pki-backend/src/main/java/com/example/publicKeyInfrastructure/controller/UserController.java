@@ -77,7 +77,7 @@ public class UserController {
         return ResponseEntity.ok(tokenPair);
     }
 
-    @GetMapping("/all")
+    @GetMapping("/all-users")
     public List<UserWithRoleDTO> getAllUsers() {
         System.out.println(service.getAllUsers());
         return service.getAllUsers();
