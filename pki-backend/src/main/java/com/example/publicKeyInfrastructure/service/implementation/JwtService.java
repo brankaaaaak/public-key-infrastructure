@@ -2,15 +2,18 @@ package com.example.publicKeyInfrastructure.service.implementation;
 
 import com.example.publicKeyInfrastructure.dto.TokenPair;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
@@ -90,19 +93,19 @@ public class JwtService {
         return extractAllClaims(token) != null;
     }
     private Claims extractAllClaims(String token) {
-        Claims claims = null;
-
         try {
-            claims = Jwts.parser()
+            return Jwts.parser()
                     .verifyWith(getSignInKey())
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
-        } catch (JwtException | IllegalArgumentException e) {
-            throw new RuntimeException(e);
+        } catch (ExpiredJwtException ex) {
+            log.warn("Token expired: {}", ex.getMessage());
+            throw ex; 
+        } catch (JwtException | IllegalArgumentException ex) {
+            log.error("Invalid JWT: {}", ex.getMessage());
+            return null;
         }
-
-        return claims;
     }
     public String extractUsernameFromToken(String token) {
         Claims claims = extractAllClaims(token);

@@ -72,7 +72,7 @@ public class UserController {
         return ResponseEntity.ok(tokenPair);
     }
     @PostMapping("/refresh-token")
-    public ResponseEntity<?> refreshToken(@Valid @RequestBody RefreshTokenDTO request) {
+    public ResponseEntity<TokenPair> refreshToken(@Valid @RequestBody RefreshTokenDTO request) {
         TokenPair tokenPair = service.refreshToken(request);
         return ResponseEntity.ok(tokenPair);
     }
