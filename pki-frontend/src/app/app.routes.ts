@@ -40,7 +40,7 @@ export const routes: Routes = [
     { path: 'ca/requests', component: CaManageRequestsComponent},
 
     { path: 'admin/view-users' , component: ViewUsersComponent},
-    { path: 'ca/view-certificate-chain', component: ViewCertificateChainComponent }
+    { path: 'ca/view-certificate-chain', component: ViewCertificateChainComponent },
     { path: 'user/download', component: UserDownloadComponent},
     { path: 'admin/create-intermediate', component: AdminCreateIntermediateCertificateComponent},
     {path:'admin/create-end-certificate',component:AdminCreateEndCertificateComponent}
