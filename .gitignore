@@ -57,3 +57,5 @@ pki-backend/src/main/resources/localhost.p12
 
 #keystore
 pki-backend/keystores/
+
+.idea/
