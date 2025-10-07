@@ -1,0 +1,105 @@
+.create-root-container {
+  text-align: center;
+  padding: 40px;
+  background-color: #f5f5f5;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  h2 {
+    color: #6a1b9a;
+    margin-bottom: 10px;
+  }
+
+  p {
+    margin-bottom: 30px;
+    color: #333;
+    font-size: 16px;
+  }
+
+  table {
+    width: 100%;
+    max-width: 900px;
+    margin-bottom: 30px;
+    border-collapse: collapse;
+    background-color: white;
+    border: 1px solid #ddd;
+
+    th, td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: center;
+      min-width: 150px;
+    }
+
+    th {
+      background-color: #6a1b9a;
+      color: white;
+    }
+
+    tbody tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    tbody tr:hover {
+      background-color: #f1f1f1;
+    }
+
+    input[type="radio"] {
+      cursor: pointer;
+      transform: scale(1.2);
+    }
+  }
+
+  .form-group {
+    margin-top: 20px;        
+    margin-bottom: 30px;
+    width: 100%;
+    max-width: 300px;
+    text-align: left;
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    input.form-control {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+  }
+
+  .btn {
+    background-color: #6a1b9a;
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+
+    &:hover {
+      background-color: #4a148c;
+    }
+  }
+
+  .success-message {
+    margin-top: 20px;
+    color: green;
+    font-weight: bold;
+  }
+
+  .error-message {
+    margin-top: 20px;
+    color: red;
+    font-weight: bold;
+  }
+}
+

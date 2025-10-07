@@ -1,0 +1,39 @@
+<div class="page register">
+  <h2>Registration</h2>
+  <div *ngIf="showSuccessPopup" class="popup">
+    Registration successful! Please check your email to verify your account.
+  </div>
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <input type="text" placeholder="Name" formControlName="name" />
+    <input type="text" placeholder="Last name" formControlName="lastName" />
+    <input type="email" placeholder="Email" formControlName="email" />
+    <select formControlName="organization">
+      <option value="" disabled selected>Choose organization</option>
+      <option *ngFor="let org of organizations" [value]="org">{{ org }}</option>
+    </select>
+
+
+    <input type="password" placeholder="Password"
+           formControlName="password"
+           (input)="onPasswordInput()" />
+    <div *ngIf="form.get('password')?.errors?.['passwordStrength'] && (form.get('password')?.dirty || form.get('password')?.touched)" style="color: #6a1b9a; margin-bottom: 8px; font-size: 12px;">
+      Password must be at least 8 characters long and contain uppercase, lowercase, number, and special character.
+    </div>
+    <div *ngIf="form.get('password')?.dirty || form.get('password')?.touched">
+    <div class="strength-bar">
+      <div class="bar"
+          [style.width.%]="(passwordStrength + 1) * 20"
+          [style.backgroundColor]="passwordStrengthColor">
+      </div>
+    </div>
+    <small>Password strength: {{ passwordStrengthLabel }}</small>
+    </div>
+    <input type="password" placeholder="Repeat password" formControlName="repeatPassword" />
+    <div *ngIf="form.errors?.['passwordMismatch'] && form.get('repeatPassword')?.touched"
+        style="color: #6a1b9a; font-size: 12px;">
+      Passwords do not match.
+    </div>
+    <p *ngIf="notification" class="notification">{{ notification.msgBody }}</p>
+    <button type="submit" [disabled]="form.invalid || form.errors?.['passwordMismatch']">Register</button>
+  </form>
+</div>

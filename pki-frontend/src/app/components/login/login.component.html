@@ -1,0 +1,32 @@
+<div class="page login">
+  <h2>Log in</h2>
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <input
+      type="email"
+      placeholder="Email"
+      formControlName="email"
+    />
+    <div *ngIf="form.get('email')?.invalid && (form.get('email')?.touched || form.get('email')?.dirty)" class="error">
+      <div *ngIf="form.get('email')?.errors?.['required']">Email is required.</div>
+      <div *ngIf="form.get('email')?.errors?.['email']">Enter a valid email.</div>
+    </div>
+
+    <input
+      type="password"
+      placeholder="Password"
+      formControlName="password"
+    />
+    <div *ngIf="form.get('password')?.invalid && (form.get('password')?.touched || form.get('password')?.dirty)" class="error">
+      <div *ngIf="form.get('password')?.errors?.['required']">Password is required.</div>
+      <div *ngIf="form.get('password')?.errors?.['minlength']">
+        Password must be at least 8 characters.
+      </div>
+    </div>
+
+    <div *ngIf="loginFailed" class="error">
+      Login failed. Please check your credentials.
+    </div>
+
+    <button type="submit" [disabled]="form.invalid">Log in</button>
+  </form>
+</div>

@@ -1,0 +1,50 @@
+<div class="requests-container">
+  <h2>Certificates to download</h2>
+
+  <table class="requests-table" *ngIf="requests && requests.length > 0">
+    <thead>
+      <tr>
+        <!-- <th>ID</th> --> 
+        <th>Serial Number</th>
+        <th>Owner (Email)</th>
+        <th>Valid From</th>
+        <th>Valid To</th>
+        <th>Certificate Type</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let cert of requests">
+        <!-- <td>{{ cert.id }}</td> --> 
+        <td>{{ cert.serialNumber }}</td>
+        <td>{{ cert.owner }}</td>
+        <td>{{ cert.validFrom | date:'yyyy-MM-dd' }}</td>
+        <td>
+          {{ cert.validTo | date:'yyyy-MM-dd' }}
+          <span *ngIf="isExpired(cert.validTo)" class="expired">(Expired)</span>
+        </td>
+        <td>{{ cert.certificateType }}</td>
+        <td>
+           <button class="btn-download"
+                mat-raised-button color="warn"
+                (click)="downloadCertificate(cert)"
+                [disabled]="isExpiredOrRevoked(cert)"
+                [matTooltip]="getDisableReason(cert,'Download')">
+          Download
+        </button>
+           <button class="btn-download"
+                mat-raised-button color="warn"
+                (click)="revokeCertificate(cert)"
+                [disabled]="isExpiredOrRevoked(cert)"
+                [matTooltip]="getDisableReason(cert,'Revoke')">
+          Revoke
+        </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div *ngIf="requests && requests.length === 0" class="no-data">
+    No certificates found.
+  </div>
+</div>

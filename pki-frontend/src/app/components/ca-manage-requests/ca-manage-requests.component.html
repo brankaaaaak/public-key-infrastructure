@@ -1,0 +1,68 @@
+<table mat-table [dataSource]="requests" class="mat-elevation-z8">
+
+  <ng-container matColumnDef="id">
+    <th mat-header-cell *matHeaderCellDef>ID</th>
+    <td mat-cell *matCellDef="let r">{{ r.id }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="createdAt">
+    <th mat-header-cell *matHeaderCellDef>Created</th>
+    <td mat-cell *matCellDef="let r">{{ r.createdAt | date:'short' }}</td>
+  </ng-container>
+
+   <ng-container matColumnDef="durationInDays">
+    <th mat-header-cell *matHeaderCellDef>Duration in days</th>
+    <td mat-cell *matCellDef="let r">{{ r.durationInDays}}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="certificateType">
+    <th mat-header-cell *matHeaderCellDef>Type</th>
+    <td mat-cell *matCellDef="let r">{{ r.certificateType }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="subject">
+    <th mat-header-cell *matHeaderCellDef>Subject</th>
+    <td mat-cell *matCellDef="let r">{{ r.subjectEmail }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="issuer">
+    <th mat-header-cell *matHeaderCellDef>Issuer Serial Number</th>
+    <td mat-cell *matCellDef="let r">{{ r.issuerSerialNumber }}</td>
+  </ng-container>
+
+   <ng-container matColumnDef="issuerType">
+    <th mat-header-cell *matHeaderCellDef>Issuer Type</th>
+    <td mat-cell *matCellDef="let r">{{ r.issuerType }}</td>
+  </ng-container>
+
+   <ng-container matColumnDef="issuerFrom">
+    <th mat-header-cell *matHeaderCellDef>Issuer Valid from</th>
+    <td mat-cell *matCellDef="let r">{{ r.issuerValidFrom | date:'short' }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="issuerTo">
+    <th mat-header-cell *matHeaderCellDef>Issuer Valid to</th>
+    <td mat-cell *matCellDef="let r">{{ r.issuerValidTo | date:'short' }}</td>
+  </ng-container>
+<ng-container matColumnDef="keyUsages">
+  <th mat-header-cell *matHeaderCellDef>Key Usages</th>
+  <td mat-cell *matCellDef="let r">{{ r.keyUsages?.join(', ') }}</td>
+</ng-container>
+
+<ng-container matColumnDef="extendedKeyUsages">
+  <th mat-header-cell *matHeaderCellDef>Extended Key Usages</th>
+  <td mat-cell *matCellDef="let r">{{ r.extendedKeyUsages?.join(', ') }}</td>
+</ng-container>
+
+  <ng-container matColumnDef="actions">
+    <th mat-header-cell *matHeaderCellDef>Actions</th>
+    <td mat-cell *matCellDef="let r">
+      <button mat-button color="primary" (click)="approve(r)">Accept</button>
+      <button mat-button color="warn" (click)="reject(r)">Deny</button>
+    </td>
+  </ng-container>
+
+  <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+  <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+</table>
+

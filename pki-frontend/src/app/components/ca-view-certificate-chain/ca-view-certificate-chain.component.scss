@@ -1,0 +1,74 @@
+
+.certificate-chain {
+  padding: 20px;
+  border-radius: 8px;
+  margin: 0 auto;
+
+  h2 {
+    color: #6a1b9a;
+    margin-bottom: 16px;
+    font-size: 1.5em;
+    font-weight: 600;
+  }
+
+  ul {
+    list-style-type: none;
+    padding-left: 20px;
+
+    li {
+      position: relative;
+      padding: 8px 12px;
+      margin-bottom: 4px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s, color 0.2s;
+
+
+      strong {
+        color: #6a1b9a;
+      }
+
+      .revoked {
+        color: #d32f2f;
+        font-weight: bold;
+        margin-left: 6px;
+      }
+
+      ul {
+        padding-left: 20px;
+        li {
+          padding: 6px 12px;
+        }
+      }
+    }
+  }
+}
+
+.certificate-details {
+  padding: 16px;
+  background-color: rgba(255, 255, 255, 0.82);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+
+  h3 {
+    color: #6a1b9a;
+    margin-bottom: 12px;
+    font-size: 1.3em;
+    font-weight: 600;
+  }
+
+  table.user-table {
+    width: 100%;
+    border-collapse: collapse;
+
+    td {
+      padding: 10px 14px;
+      color: #333;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+  }
+}
